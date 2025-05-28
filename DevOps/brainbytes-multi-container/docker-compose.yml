@@ -1,31 +1,41 @@
-version: '3'
+version: '3.8'
+
+networks:
+  brainbytes-network:
+    driver: bridge
+
 services:
   # Frontend container
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
     ports:
-      - "8080:3000"
+      - "8080:3000" # Ensure the frontend port matches the app configuration
     volumes:
       - ./frontend:/usr/src/app
       - /usr/src/app/node_modules
     depends_on:
       - backend
     restart: unless-stopped
+    networks:
+      - brainbytes-network
 
   # Backend API container
   backend:
-    build: ./backend
+    build:
+      context: ./backend
     ports:
       - "3000:3000"
     volumes:
       - ./backend:/usr/src/app
       - /usr/src/app/node_modules
-    environment:
-      - GEMINI_API_KEY=AIzaSyASmi0JYBH_Arv2qOXJGJLq5SMHpXP6MUs
-      - HUGGINGFACE_TOKEN=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
+    env_file:
+      - ./backend/.env # Use an .env file for environment variables
     depends_on:
       - mongo
     restart: unless-stopped
+    networks:
+      - brainbytes-network
 
   # MongoDB container
   mongo:
@@ -35,8 +45,14 @@ services:
     volumes:
       - mongo-data:/data/db
     restart: unless-stopped
+    networks:
+      - brainbytes-network
+    healthcheck:
+      test: ["CMD", "mongo", "--eval", "db.stats()"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
-# Define volumes for persistent data
 volumes:
   mongo-data:
-
+    driver: local
