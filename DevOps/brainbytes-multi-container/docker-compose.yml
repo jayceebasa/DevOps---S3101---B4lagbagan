@@ -1,3 +1,5 @@
+#testing
+
 version: '3'
 services:
   # Frontend container
