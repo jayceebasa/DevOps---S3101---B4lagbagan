@@ -1,0 +1,26 @@
+# Ignore local dependencies
+node_modules
+npm-debug.log
+yarn.lock
+
+# Ignore build output
+dist
+build
+
+# Ignore OS files
+.DS_Store
+Thumbs.db
+
+# Ignore environment and config
+.env
+.env.local
+.env.*.local
+
+# Ignore Docker artifacts
+.dockerignore
+Dockerfile
+
+# Optional: VSCode and IDE files
+.vscode
+.idea
+*.swp
