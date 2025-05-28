@@ -17,14 +17,10 @@ aiService.initializeAI();
 
 // MongoDB connection
 const connectToDatabase = async () => {
-  const defaultUri = "mongodb://localhost:27017/brainbytes";
-  const uri = process.env.MONGODB_URI || "mongodb://localhost:27017/brainbytes";
+  const uri = process.env.MONGODB_URI || "mongodb://mongo:27017/brainbytes";
 
-  mongoose.set("bufferTimeoutMS", 30000);
   try {
     await mongoose.connect(uri, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
       retryWrites: true,
       serverSelectionTimeoutMS: 60000, // Increase timeout for server selection
       socketTimeoutMS: 60000, // Increase socket timeout
