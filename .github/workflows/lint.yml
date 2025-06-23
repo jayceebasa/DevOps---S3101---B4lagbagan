@@ -16,66 +16,64 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v2
 
-      # Step 2: Debug - List files in the root directory
-      - name: List files in the root directory
-        run: ls -R
-
-      # Step 3: Debug - List files in frontend and backend
-      - name: List files in frontend
-        run: ls -R ./DevOps/brainbytes-multi-container/frontend
-
-      - name: List files in backend
-        run: ls -R ./DevOps/brainbytes-multi-container/backend
-
-      # Step 4: Set up Node.js
+      # Step 2: Set up Node.js
       - name: Set up Node.js
         uses: actions/setup-node@v2
         with:
           node-version: '16'
-          cache: 'npm'
 
-      # Step 5: Frontend linting
+      # Step 3: Cache frontend dependencies
+      - name: Cache frontend dependencies
+        uses: actions/cache@v3
+        with:
+          path: DevOps/brainbytes-multi-container/frontend/node_modules
+          key: ${{ runner.os }}-frontend-${{ hashFiles('DevOps/brainbytes-multi-container/frontend/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-frontend-
+
+      # Step 4: Install frontend dependencies
       - name: Install frontend dependencies
-        working-directory: ./DevOps/brainbytes-multi-container/frontend
+        working-directory: DevOps/brainbytes-multi-container/frontend
         run: |
-          echo "Current directory: $(pwd)"
-          ls -R
           if [ -f package-lock.json ]; then
             npm ci
           else
-            echo "package-lock.json not found, falling back to npm install"
             npm install
           fi
 
+      # Step 5: Lint frontend code
       - name: Lint frontend code
-        working-directory: ./DevOps/brainbytes-multi-container/frontend
+        working-directory: DevOps/brainbytes-multi-container/frontend
         run: |
-          echo "Current directory: $(pwd)"
-          ls -R
           if [ -f package.json ]; then
             npm run lint || echo "Frontend linting failed"
           else
             echo "package.json not found in frontend, skipping linting"
           fi
 
-      # Step 6: Backend linting
+      # Step 6: Cache backend dependencies
+      - name: Cache backend dependencies
+        uses: actions/cache@v3
+        with:
+          path: DevOps/brainbytes-multi-container/backend/node_modules
+          key: ${{ runner.os }}-backend-${{ hashFiles('DevOps/brainbytes-multi-container/backend/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-backend-
+
+      # Step 7: Install backend dependencies
       - name: Install backend dependencies
-        working-directory: ./DevOps/brainbytes-multi-container/backend
+        working-directory: DevOps/brainbytes-multi-container/backend
         run: |
-          echo "Current directory: $(pwd)"
-          ls -R
           if [ -f package-lock.json ]; then
             npm ci
           else
-            echo "package-lock.json not found, falling back to npm install"
             npm install
           fi
 
+      # Step 8: Lint backend code
       - name: Lint backend code
-        working-directory: ./DevOps/brainbytes-multi-container/backend
+        working-directory: DevOps/brainbytes-multi-container/backend
         run: |
-          echo "Current directory: $(pwd)"
-          ls -R
           if [ -f package.json ]; then
             npm run lint || echo "Backend linting failed"
           else
