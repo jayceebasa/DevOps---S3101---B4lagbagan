@@ -50,7 +50,7 @@ jobs:
           npx prettier --check . || echo "Prettier issues in frontend"
 
       - name: Upload frontend lint report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: eslint-report-frontend-${{ matrix.node-version }}
           path: DevOps/brainbytes-multi-container/frontend/eslint-report-frontend.json
@@ -83,7 +83,7 @@ jobs:
           npx prettier --check . || echo "Prettier issues in backend"
 
       - name: Upload backend lint report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: eslint-report-backend-${{ matrix.node-version }}
           path: DevOps/brainbytes-multi-container/backend/eslint-report-backend.json
