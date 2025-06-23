@@ -10,89 +10,99 @@ jobs:
   test:
     name: Run Tests (Node ${{ matrix.node-version }})
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
 
     strategy:
       matrix:
         node-version: [14.x, 16.x, 18.x]
 
     steps:
-      # Step 1: Check out the repository
+      # Step 1: Checkout
       - name: Check out repository
         uses: actions/checkout@v2
 
-      # Step 2: Set up Node.js
+      # Step 2: Setup Node.js
       - name: Set up Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v2
         with:
           node-version: ${{ matrix.node-version }}
 
+      ####################################
+      # FRONTEND
+      ####################################
+
       # Step 3: Cache frontend dependencies
-      - name: Cache frontend dependencies
-        uses: actions/cache@v3
+      - name: Cache frontend node_modules
+        uses: actions/cache@v4
         with:
           path: DevOps/brainbytes-multi-container/frontend/node_modules
-          key: ${{ runner.os }}-frontend-${{ matrix.node-version }}-${{ hashFiles('DevOps/brainbytes-multi-container/frontend/package-lock.json') }}
+          key: ${{ runner.os }}-frontend-v2-${{ matrix.node-version }}-${{ hashFiles('DevOps/brainbytes-multi-container/frontend/package-lock.json') }}
           restore-keys: |
-            ${{ runner.os }}-frontend-${{ matrix.node-version }}-
+            ${{ runner.os }}-frontend-v2-
 
       # Step 4: Install frontend dependencies
       - name: Install frontend dependencies
         working-directory: DevOps/brainbytes-multi-container/frontend
         run: |
+          rm -rf node_modules
           if [ -f package-lock.json ]; then
-            npm ci
-          else
             npm install
+          else
+            echo "No package-lock.json found, skipping frontend install"
           fi
 
       # Step 5: Run frontend tests with coverage
-      - name: Run frontend tests with coverage
+      - name: Run frontend tests
         working-directory: DevOps/brainbytes-multi-container/frontend
         run: |
           if [ -f package.json ]; then
             npm run test:coverage || echo "Frontend tests failed"
           else
-            echo "package.json not found in frontend, skipping tests"
+            echo "package.json not found in frontend"
           fi
 
-      # Step 6: Upload frontend coverage report
+      # Step 6: Upload frontend coverage
       - name: Upload frontend coverage
         uses: actions/upload-artifact@v4
         with:
           name: frontend-coverage-${{ matrix.node-version }}
           path: DevOps/brainbytes-multi-container/frontend/coverage
 
+      ####################################
+      # BACKEND
+      ####################################
+
       # Step 7: Cache backend dependencies
-      - name: Cache backend dependencies
-        uses: actions/cache@v3
+      - name: Cache backend node_modules
+        uses: actions/cache@v4
         with:
           path: DevOps/brainbytes-multi-container/backend/node_modules
-          key: ${{ runner.os }}-backend-${{ matrix.node-version }}-${{ hashFiles('DevOps/brainbytes-multi-container/backend/package-lock.json') }}
+          key: ${{ runner.os }}-backend-v2-${{ matrix.node-version }}-${{ hashFiles('DevOps/brainbytes-multi-container/backend/package-lock.json') }}
           restore-keys: |
-            ${{ runner.os }}-backend-${{ matrix.node-version }}-
+            ${{ runner.os }}-backend-v2-
 
       # Step 8: Install backend dependencies
       - name: Install backend dependencies
         working-directory: DevOps/brainbytes-multi-container/backend
         run: |
+          rm -rf node_modules
           if [ -f package-lock.json ]; then
-            npm ci
-          else
             npm install
+          else
+            echo "No package-lock.json found, skipping backend install"
           fi
 
       # Step 9: Run backend tests with coverage
-      - name: Run backend tests with coverage
+      - name: Run backend tests
         working-directory: DevOps/brainbytes-multi-container/backend
         run: |
           if [ -f package.json ]; then
             npm run test:coverage || echo "Backend tests failed"
           else
-            echo "package.json not found in backend, skipping tests"
+            echo "package.json not found in backend"
           fi
 
-      # Step 10: Upload backend coverage report
+      # Step 10: Upload backend coverage
       - name: Upload backend coverage
         uses: actions/upload-artifact@v4
         with:
