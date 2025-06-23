@@ -8,8 +8,13 @@ on:
 
 jobs:
   test:
-    name: Run Tests
+    name: Run Tests (Node ${{ matrix.node-version }})
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    strategy:
+      matrix:
+        node-version: [14.x, 16.x, 18.x]
 
     steps:
       # Step 1: Check out the repository
@@ -17,19 +22,19 @@ jobs:
         uses: actions/checkout@v2
 
       # Step 2: Set up Node.js
-      - name: Set up Node.js
+      - name: Set up Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v2
         with:
-          node-version: '16'
+          node-version: ${{ matrix.node-version }}
 
       # Step 3: Cache frontend dependencies
       - name: Cache frontend dependencies
         uses: actions/cache@v3
         with:
           path: DevOps/brainbytes-multi-container/frontend/node_modules
-          key: ${{ runner.os }}-frontend-${{ hashFiles('DevOps/brainbytes-multi-container/frontend/package-lock.json') }}
+          key: ${{ runner.os }}-frontend-${{ matrix.node-version }}-${{ hashFiles('DevOps/brainbytes-multi-container/frontend/package-lock.json') }}
           restore-keys: |
-            ${{ runner.os }}-frontend-
+            ${{ runner.os }}-frontend-${{ matrix.node-version }}-
 
       # Step 4: Install frontend dependencies
       - name: Install frontend dependencies
@@ -41,26 +46,33 @@ jobs:
             npm install
           fi
 
-      # Step 5: Run frontend tests
-      - name: Run frontend tests
+      # Step 5: Run frontend tests with coverage
+      - name: Run frontend tests with coverage
         working-directory: DevOps/brainbytes-multi-container/frontend
         run: |
           if [ -f package.json ]; then
-            npm test || echo "Frontend tests failed"
+            npm run test:coverage || echo "Frontend tests failed"
           else
             echo "package.json not found in frontend, skipping tests"
           fi
 
-      # Step 6: Cache backend dependencies
+      # Step 6: Upload frontend coverage report
+      - name: Upload frontend coverage
+        uses: actions/upload-artifact@v3
+        with:
+          name: frontend-coverage-${{ matrix.node-version }}
+          path: DevOps/brainbytes-multi-container/frontend/coverage
+
+      # Step 7: Cache backend dependencies
       - name: Cache backend dependencies
         uses: actions/cache@v3
         with:
           path: DevOps/brainbytes-multi-container/backend/node_modules
-          key: ${{ runner.os }}-backend-${{ hashFiles('DevOps/brainbytes-multi-container/backend/package-lock.json') }}
+          key: ${{ runner.os }}-backend-${{ matrix.node-version }}-${{ hashFiles('DevOps/brainbytes-multi-container/backend/package-lock.json') }}
           restore-keys: |
-            ${{ runner.os }}-backend-
+            ${{ runner.os }}-backend-${{ matrix.node-version }}-
 
-      # Step 7: Install backend dependencies
+      # Step 8: Install backend dependencies
       - name: Install backend dependencies
         working-directory: DevOps/brainbytes-multi-container/backend
         run: |
@@ -70,12 +82,19 @@ jobs:
             npm install
           fi
 
-      # Step 8: Run backend tests
-      - name: Run backend tests
+      # Step 9: Run backend tests with coverage
+      - name: Run backend tests with coverage
         working-directory: DevOps/brainbytes-multi-container/backend
         run: |
           if [ -f package.json ]; then
-            npm test || echo "Backend tests failed"
+            npm run test:coverage || echo "Backend tests failed"
           else
             echo "package.json not found in backend, skipping tests"
           fi
+
+      # Step 10: Upload backend coverage report
+      - name: Upload backend coverage
+        uses: actions/upload-artifact@v3
+        with:
+          name: backend-coverage-${{ matrix.node-version }}
+          path: DevOps/brainbytes-multi-container/backend/coverage

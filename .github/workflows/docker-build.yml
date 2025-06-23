@@ -12,36 +12,70 @@ jobs:
   build:
     name: Build Docker Images
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
       # Step 1: Check out the repository
       - name: Check out repository
         uses: actions/checkout@v3
 
-      # Step 2: Debug - List files to verify directory structure
-      - name: List files in the workspace
-        run: ls -R
-
-      # Step 3: Set up Docker Buildx
+      # Step 2: Set up Docker Buildx
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+
+      # Step 3: Login to GitHub Container Registry (optional for push)
+      # - name: Log in to GHCR
+      #   uses: docker/login-action@v3
+      #   with:
+      #     registry: ghcr.io
+      #     username: ${{ github.actor }}
+      #     password: ${{ secrets.GITHUB_TOKEN }}
 
       # Step 4: Build frontend image
       - name: Build frontend image
         uses: docker/build-push-action@v4
         with:
           context: ./DevOps/brainbytes-multi-container/frontend
+          file: ./DevOps/brainbytes-multi-container/frontend/Dockerfile
           push: false
           tags: brainbytes/frontend:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          outputs: type=docker,dest=/tmp/frontend-image.tar
 
       # Step 5: Build backend image
       - name: Build backend image
         uses: docker/build-push-action@v4
         with:
           context: ./DevOps/brainbytes-multi-container/backend
+          file: ./DevOps/brainbytes-multi-container/backend/Dockerfile
           push: false
           tags: brainbytes/backend:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          outputs: type=docker,dest=/tmp/backend-image.tar
+
+      # Step 6: Upload built image artifacts
+      - name: Upload Docker images
+        uses: actions/upload-artifact@v3
+        with:
+          name: docker-images
+          path: |
+            /tmp/frontend-image.tar
+            /tmp/backend-image.tar
+
+      # Step 7: Install Docker Compose (if needed)
+      - name: Install Docker Compose
+        run: |
+          sudo curl -L "https://github.com/docker/compose/releases/download/v2.17.2/docker-compose-linux-x86_64" -o /usr/local/bin/docker-compose
+          sudo chmod +x /usr/local/bin/docker-compose
+          docker-compose --version
+
+      # Step 8: Test Docker Compose setup
+      - name: Test Docker Compose
+        working-directory: ./DevOps/brainbytes-multi-container
+        run: |
+          docker-compose up -d
+          sleep 10
+          docker-compose ps
+          docker-compose down

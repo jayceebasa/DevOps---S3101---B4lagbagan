@@ -4,7 +4,8 @@
   "description": "Backend API for BrainBytes",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "test:coverage": "jest --coverage"
   },
   "dependencies": {
     "@google/genai": "^0.14.1",
