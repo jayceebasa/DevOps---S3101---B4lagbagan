@@ -14,25 +14,33 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # Step 1: Check out the repository
       - name: Check out repository
         uses: actions/checkout@v3
 
+      # Step 2: Debug - List files to verify directory structure
+      - name: List files in the workspace
+        run: ls -R
+
+      # Step 3: Set up Docker Buildx
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      # Step 4: Build frontend image
       - name: Build frontend image
         uses: docker/build-push-action@v4
         with:
-          context: ./frontend
+          context: ./DevOps/brainbytes-multi-container/frontend
           push: false
           tags: brainbytes/frontend:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      # Step 5: Build backend image
       - name: Build backend image
         uses: docker/build-push-action@v4
         with:
-          context: ./backend
+          context: ./DevOps/brainbytes-multi-container/backend
           push: false
           tags: brainbytes/backend:latest
           cache-from: type=gha
