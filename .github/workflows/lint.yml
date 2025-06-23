@@ -23,19 +23,36 @@ jobs:
           node-version: '16'
           cache: 'npm'
 
-      # Step 3: Frontend linting
+      # Step 3: Debug - List files in frontend and backend
+      - name: List files in frontend
+        run: ls -R ./DevOps/brainbytes-multi-container/frontend
+
+      - name: List files in backend
+        run: ls -R ./DevOps/brainbytes-multi-container/backend
+
+      # Step 4: Frontend linting
       - name: Install frontend dependencies
         working-directory: ./DevOps/brainbytes-multi-container/frontend
-        run: npm ci
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            npm install
+          fi
 
       - name: Lint frontend code
         working-directory: ./DevOps/brainbytes-multi-container/frontend
         run: npm run lint
 
-      # Step 4: Backend linting
+      # Step 5: Backend linting
       - name: Install backend dependencies
         working-directory: ./DevOps/brainbytes-multi-container/backend
-        run: npm ci
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            npm install
+          fi
 
       - name: Lint backend code
         working-directory: ./DevOps/brainbytes-multi-container/backend
