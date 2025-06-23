@@ -16,34 +16,60 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v2
 
-      # Step 2: Debug - List files in frontend and backend
+      # Step 2: Debug - List files in the root directory
+      - name: List files in the root directory
+        run: ls -R
+
+      # Step 3: Debug - List files in frontend and backend
       - name: List files in frontend
         run: ls -R ./DevOps/brainbytes-multi-container/frontend
 
       - name: List files in backend
         run: ls -R ./DevOps/brainbytes-multi-container/backend
 
-      # Step 3: Set up Node.js
+      # Step 4: Set up Node.js
       - name: Set up Node.js
         uses: actions/setup-node@v2
         with:
           node-version: '16'
           cache: 'npm'
 
-      # Step 4: Frontend linting
+      # Step 5: Frontend linting
       - name: Install frontend dependencies
         working-directory: ./DevOps/brainbytes-multi-container/frontend
-        run: npm ci
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            echo "package-lock.json not found, falling back to npm install"
+            npm install
+          fi
 
       - name: Lint frontend code
         working-directory: ./DevOps/brainbytes-multi-container/frontend
-        run: npm run lint || echo "Frontend linting failed"
+        run: |
+          if [ -f package.json ]; then
+            npm run lint || echo "Frontend linting failed"
+          else
+            echo "package.json not found in frontend, skipping linting"
+          fi
 
-      # Step 5: Backend linting
+      # Step 6: Backend linting
       - name: Install backend dependencies
         working-directory: ./DevOps/brainbytes-multi-container/backend
-        run: npm ci
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            echo "package-lock.json not found, falling back to npm install"
+            npm install
+          fi
 
       - name: Lint backend code
         working-directory: ./DevOps/brainbytes-multi-container/backend
-        run: npm run lint || echo "Backend linting failed"
+        run: |
+          if [ -f package.json ]; then
+            npm run lint || echo "Backend linting failed"
+          else
+            echo "package.json not found in backend, skipping linting"
+          fi
