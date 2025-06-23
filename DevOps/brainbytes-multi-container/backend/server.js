@@ -158,8 +158,11 @@ app.post("/api/messages", async (req, res) => {
     });
     await userMessage.save();
 
-    // Generate AI response with the specified subject
-    const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Request timeout")), 15000));
+    const timeoutDuration = process.env.TIMEOUT_DURATION || 15000;
+
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Request timeout')), timeoutDuration)
+    );
 
     // Pass the subject to the AI service
     const aiResultPromise = aiService.generateResponse(req.body.text, subject);
