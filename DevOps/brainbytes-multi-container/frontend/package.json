@@ -35,6 +35,8 @@
   },
   "scripts": {
     "dev": "next dev",
+    "build": "next build",
+    "start": "next start -p $PORT",
     "lint": "eslint .",
     "test": "jest",
     "test:coverage": "jest --coverage"
