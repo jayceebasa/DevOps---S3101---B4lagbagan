@@ -10,6 +10,9 @@ COPY package*.json ./
 # Install dependencies
 RUN npm install
 
+# Add node_modules/.bin to PATH
+ENV PATH="./node_modules/.bin:$PATH"
+
 # Copy the rest of the application code
 COPY . .
 
