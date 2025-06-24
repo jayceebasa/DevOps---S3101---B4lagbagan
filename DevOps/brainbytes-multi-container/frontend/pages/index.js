@@ -148,6 +148,7 @@ export default function Home() {
       const response = await axios.post("http://localhost:3000/api/messages", {
         text: userMsg,
         subject: targetSubject,
+        sessionId: 'test-session',
       });
 
       setConversationsBySubject((prev) => {
