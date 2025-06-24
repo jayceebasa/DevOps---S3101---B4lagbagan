@@ -7,19 +7,22 @@ WORKDIR /usr/src/app
 # Copy package.json and package-lock.json
 COPY package*.json ./
 
-# Install dependencies
+# Install all dependencies (including devDependencies)
 RUN npm install
 
-# Add node_modules/.bin to PATH
-ENV PATH="./node_modules/.bin:$PATH"
+# Add node_modules/.bin to PATH (absolute path is safer)
+ENV PATH="/usr/src/app/node_modules/.bin:$PATH"
 
 # Copy the rest of the application code
 COPY . .
 
+# Ensure next is executable (rare but safe to include)
+RUN chmod +x ./node_modules/.bin/next
+
 # Build the Next.js application
 RUN npm run build
 
-# Expose the port
+# Expose the application port
 EXPOSE 3000
 
 # Start the application
