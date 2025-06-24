@@ -1,5 +1,5 @@
-# Use Node.js Alpine image
-FROM node:22-alpine
+# Use Node.js official image
+FROM node:22
 
 # Set working directory
 WORKDIR /usr/src/app
@@ -9,9 +9,6 @@ COPY package*.json ./
 
 # Install dependencies
 RUN npm install
-
-# Fix permissions for next binary
-RUN chmod +x ./node_modules/.bin/next
 
 # Copy the rest of the application code
 COPY . .
