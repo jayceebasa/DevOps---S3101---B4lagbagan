@@ -26,7 +26,7 @@ export default function Home() {
     setIsClient(true);
     fetchMessages();
   }, []);
-  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
+  const API_BASE_URL = process.env.frontend.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
 
   const fetchMessages = async () => {
     try {
