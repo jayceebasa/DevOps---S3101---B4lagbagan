@@ -10,16 +10,26 @@ COPY package*.json ./
 # Install all dependencies (including devDependencies)
 RUN npm install
 
-# Add node_modules/.bin to PATH (absolute path is safer)
+# Add node_modules/.bin to PATH
 ENV PATH="/usr/src/app/node_modules/.bin:$PATH"
 
 # Copy the rest of the application code
 COPY . .
 
+# Copy environment variables
 COPY .env.frontend .env
 
-# Ensure next is executable (rare but safe to include)
-RUN chmod +x ./node_modules/.bin/next
+# Debugging: Print Node.js and npm versions
+RUN node -v && npm -v
+
+# Debugging: Print installed dependencies
+RUN ls -la node_modules
+
+# Debugging: Print environment variables
+RUN echo "Environment Variables:" && env
+
+# Debugging: Print the contents of the .env file
+RUN cat .env
 
 # Build the Next.js application
 RUN npm run build
