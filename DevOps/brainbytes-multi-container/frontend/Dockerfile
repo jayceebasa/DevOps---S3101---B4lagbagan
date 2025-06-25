@@ -16,6 +16,8 @@ ENV PATH="/usr/src/app/node_modules/.bin:$PATH"
 # Copy the rest of the application code
 COPY . .
 
+COPY .env.frontend .env
+
 # Ensure next is executable (rare but safe to include)
 RUN chmod +x ./node_modules/.bin/next
 

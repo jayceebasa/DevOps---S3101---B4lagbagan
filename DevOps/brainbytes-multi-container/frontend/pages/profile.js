@@ -39,12 +39,14 @@ export default function Profile() {
     fetchUserData();
   }, []);
 
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
+
   const fetchUserData = async () => {
     try {
       setLoading(true);
       const [userResponse, statsResponse] = await Promise.all([
-        axios.get("http://localhost:3000/api/users/me"),
-        axios.get("http://localhost:3000/api/users/stats"),
+       axios.get(`${API_BASE_URL}/api/users/me`),
+      axios.get(`${API_BASE_URL}/api/users/stats`),
       ]);
 
       setUser({
@@ -158,7 +160,7 @@ export default function Profile() {
   const handleSaveProfile = async () => {
     try {
       setLoading(true);
-      const response = await axios.put("http://localhost:3000/api/users/me", {
+      const response = await axios.put(`${API_BASE_URL}/api/users/me`, {
         ...updatedUser,
         currentEmail: user.email,
       });

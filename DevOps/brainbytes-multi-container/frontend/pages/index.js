@@ -26,7 +26,8 @@ export default function Home() {
     setIsClient(true);
     fetchMessages();
   }, []);
-  const API_BASE_URL = process.env.frontend.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
+
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
 
   const fetchMessages = async () => {
     try {
@@ -145,8 +146,8 @@ export default function Home() {
         ...prev,
         [targetSubject]: [...prev[targetSubject], tempUserMsg],
       }));
-
-      const response = await axios.post('${API_BASE_URL}/api/messages', {
+      
+      const response = await axios.post(`${API_BASE_URL}/api/messages`, {
         text: userMsg,
         subject: targetSubject,
         sessionId: 'test-session',
