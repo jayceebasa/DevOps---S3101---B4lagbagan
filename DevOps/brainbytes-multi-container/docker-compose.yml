@@ -22,7 +22,7 @@ services:
       - /usr/src/app/node_modules
     environment:
       - GEMINI_API_KEY=AIzaSyASmi0JYBH_Arv2qOXJGJLq5SMHpXP6MUs
-      - HUGGINGFACE_TOKEN=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
+      - HUGGINGFACE_TOKEN=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
     depends_on:
       - mongo
     restart: unless-stopped
