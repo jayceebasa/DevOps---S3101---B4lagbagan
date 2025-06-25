@@ -8,6 +8,8 @@ services:
     volumes:
       - ./frontend:/usr/src/app
       - /usr/src/app/node_modules
+    env_file:
+      - ./frontend/.env.frontend
     depends_on:
       - backend
     restart: unless-stopped
