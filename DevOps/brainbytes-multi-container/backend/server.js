@@ -4,10 +4,7 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const aiService = require('./aiService');
 const Message = require('./models/Message'); // Import the Message model
-const mongoUri =
-  process.env.NODE_ENV === 'test'
-    ? 'mongodb://localhost:27017/brainbytes_test' // Local MongoDB for tests
-    : 'mongodb://mongo:27017/brainbytes'; // Docker MongoDB for production
+const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/brainbytes';
 
 dotenv.config(); // Load environment variables
 
