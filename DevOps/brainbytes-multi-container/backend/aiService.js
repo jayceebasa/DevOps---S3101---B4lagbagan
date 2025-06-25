@@ -18,14 +18,19 @@ const initializeAI = () => {
 };
 
 // Function to get response from Hugging Face conversational model
-async function generateResponse(question, subject = "General") {
+async function generateResponse(question, subject = 'General', chatHistory = []) {
   try {
     const client = new InferenceClient(process.env.HUGGINGFACE_TOKEN);
 
-    // Create a subject-specific prompt based on the selected filter
-    let enhancedPrompt = question;
-    if (subject && subject !== "General") {
-      enhancedPrompt = `You are a friendly tutor who specializes in ${subject}. 
+    // Format chat history into a readable string
+    const history = chatHistory
+      .map((message) => (message.isUser ? `User: ${message.text}` : `AI: ${message.text}`))
+      .join('\n');
+
+    // Create a subject-specific prompt with chat history
+    let enhancedPrompt = `Conversation history:\n${history}\n\n`;
+    if (subject && subject !== 'General') {
+      enhancedPrompt += `You are a friendly tutor who specializes in ${subject}. 
 Please answer this question in a conversational way: ${question}
 
 Guidelines:
@@ -35,7 +40,7 @@ Guidelines:
 - Explain concepts in plain language a student would understand
 - Keep your answer concise but helpful`;
     } else {
-      enhancedPrompt = `You are a friendly tutor. Please answer this question in a conversational way: ${question}
+      enhancedPrompt += `You are a friendly tutor. Please answer this question in a conversational way: ${question}
 
 Guidelines:
 - Use a warm, casual tone like you're talking to a student face-to-face
@@ -47,11 +52,11 @@ Guidelines:
 
     // Call the Hugging Face API with the enhanced prompt
     const chatCompletion = await client.chatCompletion({
-      provider: "nebius",
-      model: "deepseek-ai/DeepSeek-V3-0324",
+      provider: 'nebius',
+      model: 'deepseek-ai/DeepSeek-V3-0324',
       messages: [
         {
-          role: "user",
+          role: 'user',
           content: enhancedPrompt,
         },
       ],
@@ -59,19 +64,19 @@ Guidelines:
 
     if (chatCompletion && chatCompletion.choices && chatCompletion.choices[0]) {
       return {
-        category: "open-ended",
+        category: 'open-ended',
         response: chatCompletion.choices[0].message.content.trim(),
       };
     } else {
       return {
-        category: "error",
+        category: 'error',
         response: "I'm sorry, I couldn't understand your question. Please try again.",
       };
     }
   } catch (error) {
-    console.error("Error calling Hugging Face API:", error);
+    console.error('Error calling Hugging Face API:', error);
     return {
-      category: "error",
+      category: 'error',
       response: "I'm sorry, something went wrong. Please try again later.",
     };
   }

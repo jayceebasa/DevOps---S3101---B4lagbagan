@@ -1,16 +1,16 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import Link from "next/link";
 import Head from "next/head";
 
 export default function Profile() {
+  const [isClient, setIsClient] = useState(false);
   const [user, setUser] = useState({
-    name: "John Doe",
-    email: "john.doe@example.com",
+    name: "",
+    email: "",
     avatar: null,
-    joinDate: "2024-11-15",
+    joinDate: "",
   });
-
   const [stats, setStats] = useState({
     totalQuestions: 0,
     subjectBreakdown: {
@@ -21,79 +21,81 @@ export default function Profile() {
       Technology: 0,
       General: 0,
     },
-    streak: 5,
-    lastActive: "Today",
+    streak: 0,
+    lastActive: "",
   });
-
   const [settings, setSettings] = useState({
-    preferredSubjects: ["Math", "Technology"],
+    preferredSubjects: [],
     notificationsEnabled: true,
     theme: "light",
   });
-
   const [loading, setLoading] = useState(true);
   const [notification, setNotification] = useState("");
   const [editMode, setEditMode] = useState(false);
   const [updatedUser, setUpdatedUser] = useState({});
 
-  // Fetch user data and stats
   useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        setLoading(true);
-
-        // Fetch user profile data (using correct port)
-        const userResponse = await axios.get("http://localhost:3000/api/users/me");
-        setUser(userResponse.data);
-
-        // Fetch learning stats from correct port
-        const statsResponse = await axios.get("http://localhost:3000/api/users/stats");
-
-        // Process and set the stats from real chat data
-        const chatStats = statsResponse.data;
-
-        const subjectBreakdown = {
-          Math: 0,
-          Science: 0,
-          History: 0,
-          Language: 0,
-          Technology: 0,
-          General: 0,
-        };
-
-        // Populate subject breakdown from actual data
-        chatStats.subjectData.forEach((item) => {
-          if (subjectBreakdown.hasOwnProperty(item.subject)) {
-            subjectBreakdown[item.subject] = item.count;
-          } else {
-            subjectBreakdown.General += item.count;
-          }
-        });
-
-        // Calculate total questions across all subjects
-        const totalQuestions = chatStats.totalQuestions;
-
-        setStats({
-          totalQuestions,
-          subjectBreakdown,
-          streak: chatStats.streak || 0,
-          lastActive: chatStats.lastActive ? new Date(chatStats.lastActive).toLocaleDateString() : "Never",
-        });
-
-        setLoading(false);
-      } catch (error) {
-        console.error("Error fetching user data:", error);
-        setLoading(false);
-        setNotification("Failed to load profile data");
-        setTimeout(() => setNotification(""), 3000);
-      }
-    };
-
+    setIsClient(true);
     fetchUserData();
   }, []);
 
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
+
+  const fetchUserData = async () => {
+    try {
+      setLoading(true);
+      const [userResponse, statsResponse] = await Promise.all([
+       axios.get(`${API_BASE_URL}/api/users/me`),
+      axios.get(`${API_BASE_URL}/api/users/stats`),
+      ]);
+
+      setUser({
+        name: userResponse.data.name || "John Doe",
+        email: userResponse.data.email || "john.doe@example.com",
+        avatar: userResponse.data.avatar || null,
+        joinDate: userResponse.data.joinDate || new Date().toISOString(),
+      });
+
+      const subjectBreakdown = {
+        Math: 0,
+        Science: 0,
+        History: 0,
+        Language: 0,
+        Technology: 0,
+        General: 0,
+      };
+
+      statsResponse.data.subjectData?.forEach((item) => {
+        if (subjectBreakdown.hasOwnProperty(item.subject)) {
+          subjectBreakdown[item.subject] = item.count;
+        } else {
+          subjectBreakdown.General += item.count;
+        }
+      });
+
+      setStats({
+        totalQuestions: statsResponse.data.totalQuestions || 0,
+        subjectBreakdown,
+        streak: statsResponse.data.streak || 0,
+        lastActive: statsResponse.data.lastActive 
+          ? new Date(statsResponse.data.lastActive).toLocaleDateString() 
+          : "Never",
+      });
+
+      setSettings({
+        preferredSubjects: userResponse.data.preferredSubjects || ["Math", "Technology"],
+        notificationsEnabled: userResponse.data.notificationsEnabled !== false,
+        theme: userResponse.data.theme || "light",
+      });
+    } catch (error) {
+      console.error("Error fetching user data:", error);
+      setNotification("Failed to load profile data");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    // Initialize updated user state from current user data
     if (!loading && !editMode) {
       setUpdatedUser({ ...user });
     }
@@ -101,7 +103,6 @@ export default function Profile() {
 
   const handleEditToggle = () => {
     if (editMode) {
-      // Exiting edit mode without saving
       setUpdatedUser({ ...user });
     }
     setEditMode(!editMode);
@@ -109,10 +110,7 @@ export default function Profile() {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setUpdatedUser((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setUpdatedUser(prev => ({ ...prev, [name]: value }));
   };
 
   const handleAvatarChange = (e) => {
@@ -120,64 +118,41 @@ export default function Profile() {
     if (file) {
       const reader = new FileReader();
       reader.onload = (e) => {
-        setUpdatedUser((prev) => ({
-          ...prev,
-          avatar: e.target.result,
-        }));
+        setUpdatedUser(prev => ({ ...prev, avatar: e.target.result }));
       };
       reader.readAsDataURL(file);
     }
   };
 
   const handleSettingChange = (setting, value) => {
-    setSettings((prev) => ({
-      ...prev,
-      [setting]: value,
-    }));
-
-    // Show notification
+    setSettings(prev => ({ ...prev, [setting]: value }));
     setNotification(`${setting} setting updated`);
     setTimeout(() => setNotification(""), 3000);
   };
 
   const handlePreferredSubjectToggle = (subject) => {
-    setSettings((prev) => {
-      const updated = { ...prev };
-
-      if (updated.preferredSubjects.includes(subject)) {
-        updated.preferredSubjects = updated.preferredSubjects.filter((s) => s !== subject);
-      } else {
-        updated.preferredSubjects = [...updated.preferredSubjects, subject];
-      }
-
-      return updated;
-    });
+    setSettings(prev => ({
+      ...prev,
+      preferredSubjects: prev.preferredSubjects.includes(subject)
+        ? prev.preferredSubjects.filter(s => s !== subject)
+        : [...prev.preferredSubjects, subject]
+    }));
   };
 
-  // Add the handler functions here
   const handleClearPreferredSubjects = () => {
-    setSettings((prev) => ({
-      ...prev,
-      preferredSubjects: [],
-    }));
+    setSettings(prev => ({ ...prev, preferredSubjects: [] }));
     setNotification("Preferred subjects cleared");
     setTimeout(() => setNotification(""), 3000);
   };
 
   const handleResetNotifications = () => {
-    setSettings((prev) => ({
-      ...prev,
-      notificationsEnabled: true,
-    }));
+    setSettings(prev => ({ ...prev, notificationsEnabled: true }));
     setNotification("Notification settings reset to default");
     setTimeout(() => setNotification(""), 3000);
   };
 
   const handleResetTheme = () => {
-    setSettings((prev) => ({
-      ...prev,
-      theme: "light",
-    }));
+    setSettings(prev => ({ ...prev, theme: "light" }));
     setNotification("Theme reset to default");
     setTimeout(() => setNotification(""), 3000);
   };
@@ -185,29 +160,32 @@ export default function Profile() {
   const handleSaveProfile = async () => {
     try {
       setLoading(true);
-
-      // Include currentEmail in the request body
-      const updatedData = {
+      const response = await axios.put(`${API_BASE_URL}/api/users/me`, {
         ...updatedUser,
-        currentEmail: user.email, // Pass the current email to identify the user
-      };
-
-      // Send updated user data to the backend
-      const response = await axios.put("http://localhost:3000/api/users/me", updatedData);
-
-      // Update the frontend state with the response from the backend
+        currentEmail: user.email,
+      });
       setUser(response.data);
       setEditMode(false);
-      setLoading(false);
       setNotification("Profile updated successfully");
       setTimeout(() => setNotification(""), 3000);
     } catch (error) {
       console.error("Error updating profile:", error);
-      setLoading(false);
       setNotification("Error updating profile");
       setTimeout(() => setNotification(""), 3000);
+    } finally {
+      setLoading(false);
     }
   };
+
+  if (!isClient) {
+    return (
+      <div className="container">
+        <div className="loading">
+          <div className="spinner"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -231,7 +209,6 @@ export default function Profile() {
         <div className="content-grid">
           <div className="profile-section">
             <h2>User Profile</h2>
-
             {loading ? (
               <div className="loading">
                 <div className="spinner"></div>
@@ -242,17 +219,36 @@ export default function Profile() {
                 <div className="avatar-container">
                   {editMode ? (
                     <div className="edit-avatar">
-                      <div className="avatar" style={{ backgroundImage: updatedUser.avatar ? `url(${updatedUser.avatar})` : "none" }}>
-                        {!updatedUser.avatar && updatedUser.name.charAt(0).toUpperCase()}
+                      <div 
+                        className="avatar" 
+                        style={{ 
+                          backgroundImage: updatedUser.avatar 
+                            ? `url(${updatedUser.avatar})` 
+                            : "none" 
+                        }}
+                      >
+                        {!updatedUser.avatar && updatedUser.name?.charAt(0)?.toUpperCase()}
                       </div>
                       <label className="avatar-upload-btn">
                         Change
-                        <input type="file" accept="image/*" onChange={handleAvatarChange} hidden />
+                        <input 
+                          type="file" 
+                          accept="image/*" 
+                          onChange={handleAvatarChange} 
+                          hidden 
+                        />
                       </label>
                     </div>
                   ) : (
-                    <div className="avatar" style={{ backgroundImage: user.avatar ? `url(${user.avatar})` : "none" }}>
-                      {!user.avatar && user.name.charAt(0).toUpperCase()}
+                    <div 
+                      className="avatar" 
+                      style={{ 
+                        backgroundImage: user.avatar 
+                          ? `url(${user.avatar})` 
+                          : "none" 
+                      }}
+                    >
+                      {!user.avatar && user.name?.charAt(0)?.toUpperCase()}
                     </div>
                   )}
                 </div>
@@ -262,17 +258,33 @@ export default function Profile() {
                     <div className="edit-form">
                       <div className="form-group">
                         <label>Name</label>
-                        <input type="text" name="name" value={updatedUser.name || ""} onChange={handleInputChange} />
+                        <input 
+                          type="text" 
+                          name="name" 
+                          value={updatedUser.name || ""} 
+                          onChange={handleInputChange} 
+                        />
                       </div>
                       <div className="form-group">
                         <label>Email</label>
-                        <input type="email" name="email" value={updatedUser.email || ""} onChange={handleInputChange} />
+                        <input 
+                          type="email" 
+                          name="email" 
+                          value={updatedUser.email || ""} 
+                          onChange={handleInputChange} 
+                        />
                       </div>
                       <div className="button-group">
-                        <button className="secondary-button" onClick={handleEditToggle}>
+                        <button 
+                          className="secondary-button" 
+                          onClick={handleEditToggle}
+                        >
                           Cancel
                         </button>
-                        <button className="primary-button" onClick={handleSaveProfile}>
+                        <button 
+                          className="primary-button" 
+                          onClick={handleSaveProfile}
+                        >
                           Save Changes
                         </button>
                       </div>
@@ -281,8 +293,13 @@ export default function Profile() {
                     <>
                       <h3>{user.name}</h3>
                       <p className="email">{user.email}</p>
-                      <p className="join-date">Member since {new Date(user.joinDate).toLocaleDateString()}</p>
-                      <button className="edit-button" onClick={handleEditToggle}>
+                      <p className="join-date">
+                        Member since {new Date(user.joinDate).toLocaleDateString()}
+                      </p>
+                      <button 
+                        className="edit-button" 
+                        onClick={handleEditToggle}
+                      >
                         Edit Profile
                       </button>
                     </>
@@ -298,65 +315,56 @@ export default function Profile() {
               <div className="loading">
                 <div className="spinner"></div>
               </div>
+            ) : stats.totalQuestions === 0 ? (
+              <div className="empty-stats">
+                <p>No learning activity recorded yet.</p>
+                <Link href="/" className="start-learning-btn">
+                  Start Learning Now
+                </Link>
+              </div>
             ) : (
-              <>
-                {stats.totalQuestions === 0 ? (
-                  <div className="empty-stats">
-                    <p>No learning activity recorded yet.</p>
-                    <Link href="/">
-                      <a className="start-learning-btn">Start Learning Now</a>
-                    </Link>
-                  </div>
-                ) : (
-                  <div className="stats-grid">
-                    <div className="stat-card">
-                      <div className="stat-value">{stats.totalQuestions}</div>
-                      <div className="stat-label">Total Questions</div>
-                    </div>
-                    <div className="stat-card">
-                      <div className="stat-value">{stats.streak}</div>
-                      <div className="stat-label">Day Streak</div>
-                    </div>
-                    <div className="stat-card">
-                      <div className="stat-value">{stats.lastActive}</div>
-                      <div className="stat-label">Last Active</div>
-                    </div>
+              <div className="stats-grid">
+                <div className="stat-card">
+                  <div className="stat-value">{stats.totalQuestions}</div>
+                  <div className="stat-label">Total Questions</div>
+                </div>
+                <div className="stat-card">
+                  <div className="stat-value">{stats.streak}</div>
+                  <div className="stat-label">Day Streak</div>
+                </div>
+                <div className="stat-card">
+                  <div className="stat-value">{stats.lastActive}</div>
+                  <div className="stat-label">Last Active</div>
+                </div>
 
-                    <div className="subject-stats-card">
-                      <h4>Subject Distribution</h4>
-                      <div className="subject-bars">
-                        {Object.entries(stats.subjectBreakdown).map(([subject, count]) => (
-                          <div className="subject-stat" key={subject}>
-                            <div className="subject-label">
-                              <span>{subject}</span>
-                              <span>{count}</span>
-                            </div>
-                            <div className="subject-progress-bg">
-                              <div
-                                className="subject-progress-bar"
-                                style={{
-                                  width: `${(count / stats.totalQuestions) * 100}%`,
-                                  backgroundColor:
-                                    subject === "Math"
-                                      ? "#1a56db"
-                                      : subject === "Science"
-                                      ? "#0e9f6e"
-                                      : subject === "History"
-                                      ? "#e3a008"
-                                      : subject === "Language"
-                                      ? "#9061f9"
-                                      : subject === "Technology"
-                                      ? "#1c64f2"
-                                      : "#6b7280",
-                                }}></div>
-                            </div>
-                          </div>
-                        ))}
+                <div className="subject-stats-card">
+                  <h4>Subject Distribution</h4>
+                  <div className="subject-bars">
+                    {Object.entries(stats.subjectBreakdown).map(([subject, count]) => (
+                      <div className="subject-stat" key={subject}>
+                        <div className="subject-label">
+                          <span>{subject}</span>
+                          <span>{count}</span>
+                        </div>
+                        <div className="subject-progress-bg">
+                          <div
+                            className="subject-progress-bar"
+                            style={{
+                              width: `${(count / stats.totalQuestions) * 100}%`,
+                              backgroundColor:
+                                subject === "Math" ? "#1a56db" :
+                                subject === "Science" ? "#0e9f6e" :
+                                subject === "History" ? "#e3a008" :
+                                subject === "Language" ? "#9061f9" :
+                                subject === "Technology" ? "#1c64f2" : "#6b7280",
+                            }}
+                          />
+                        </div>
                       </div>
-                    </div>
+                    ))}
                   </div>
-                )}
-              </>
+                </div>
+              </div>
             )}
           </div>
 
@@ -371,17 +379,25 @@ export default function Profile() {
                 <div className="settings-card">
                   <div className="settings-header">
                     <h4>Preferred Subjects</h4>
-                    <button className="clear-button" onClick={handleClearPreferredSubjects}>
+                    <button 
+                      className="clear-button" 
+                      onClick={handleClearPreferredSubjects}
+                    >
                       Clear All
                     </button>
                   </div>
-                  <p className="settings-description">Select subjects you're most interested in learning</p>
+                  <p className="settings-description">
+                    Select subjects you're most interested in learning
+                  </p>
                   <div className="subject-chips">
                     {Object.keys(stats.subjectBreakdown).map((subject) => (
                       <button
                         key={subject}
-                        className={`subject-chip ${settings.preferredSubjects.includes(subject) ? "active" : ""}`}
-                        onClick={() => handlePreferredSubjectToggle(subject)}>
+                        className={`subject-chip ${
+                          settings.preferredSubjects.includes(subject) ? "active" : ""
+                        }`}
+                        onClick={() => handlePreferredSubjectToggle(subject)}
+                      >
                         {subject}
                       </button>
                     ))}
@@ -391,7 +407,10 @@ export default function Profile() {
                 <div className="settings-card">
                   <div className="settings-header">
                     <h4>Notification Settings</h4>
-                    <button className="clear-button" onClick={handleResetNotifications}>
+                    <button 
+                      className="clear-button" 
+                      onClick={handleResetNotifications}
+                    >
                       Reset
                     </button>
                   </div>
@@ -401,7 +420,9 @@ export default function Profile() {
                       <input
                         type="checkbox"
                         checked={settings.notificationsEnabled}
-                        onChange={(e) => handleSettingChange("notificationsEnabled", e.target.checked)}
+                        onChange={(e) => 
+                          handleSettingChange("notificationsEnabled", e.target.checked)
+                        }
                       />
                       <span className="toggle-slider"></span>
                     </label>
@@ -411,18 +432,36 @@ export default function Profile() {
                 <div className="settings-card">
                   <div className="settings-header">
                     <h4>Theme</h4>
-                    <button className="clear-button" onClick={handleResetTheme}>
+                    <button 
+                      className="clear-button" 
+                      onClick={handleResetTheme}
+                    >
                       Reset
                     </button>
                   </div>
                   <div className="theme-options">
-                    <button className={`theme-button ${settings.theme === "light" ? "active" : ""}`} onClick={() => handleSettingChange("theme", "light")}>
+                    <button
+                      className={`theme-button ${
+                        settings.theme === "light" ? "active" : ""
+                      }`}
+                      onClick={() => handleSettingChange("theme", "light")}
+                    >
                       Light
                     </button>
-                    <button className={`theme-button ${settings.theme === "dark" ? "active" : ""}`} onClick={() => handleSettingChange("theme", "dark")}>
+                    <button
+                      className={`theme-button ${
+                        settings.theme === "dark" ? "active" : ""
+                      }`}
+                      onClick={() => handleSettingChange("theme", "dark")}
+                    >
                       Dark
                     </button>
-                    <button className={`theme-button ${settings.theme === "system" ? "active" : ""}`} onClick={() => handleSettingChange("theme", "system")}>
+                    <button
+                      className={`theme-button ${
+                        settings.theme === "system" ? "active" : ""
+                      }`}
+                      onClick={() => handleSettingChange("theme", "system")}
+                    >
                       System
                     </button>
                   </div>
@@ -830,6 +869,34 @@ export default function Profile() {
           color: white;
         }
 
+        .empty-stats {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 40px 0;
+          background-color: #f9fafb;
+          border-radius: 8px;
+          text-align: center;
+        }
+
+        .start-learning-btn {
+          display: inline-block;
+          margin-top: 16px;
+          padding: 8px 16px;
+          background-color: #1a56db;
+          color: white;
+          border-radius: 6px;
+          text-decoration: none;
+          font-size: 0.875rem;
+          font-weight: 500;
+          transition: background-color 0.2s;
+        }
+
+        .start-learning-btn:hover {
+          background-color: #1e429f;
+        }
+
         @media (min-width: 768px) {
           .content-grid {
             grid-template-columns: 1fr 1fr;
@@ -1005,34 +1072,6 @@ export default function Profile() {
           header nav {
             width: 100%;
             justify-content: flex-start;
-          }
-
-          .empty-stats {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 40px 0;
-            background-color: #f9fafb;
-            border-radius: 8px;
-            text-align: center;
-          }
-
-          .start-learning-btn {
-            display: inline-block;
-            margin-top: 16px;
-            padding: 8px 16px;
-            background-color: #1a56db;
-            color: white;
-            border-radius: 6px;
-            text-decoration: none;
-            font-size: 0.875rem;
-            font-weight: 500;
-            transition: background-color 0.2s;
-          }
-
-          .start-learning-btn:hover {
-            background-color: #1e429f;
           }
         }
       `}</style>

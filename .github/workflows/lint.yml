@@ -1,0 +1,94 @@
+name: BrainBytes Lint
+
+on:
+  push:
+    branches: [main, development]
+  pull_request:
+    branches: [main, development]
+
+jobs:
+  lint:
+    name: Code Quality Checks (Node ${{ matrix.node-version }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    strategy:
+      matrix:
+        node-version: [14.x, 16.x, 18.x]
+
+    steps:
+      # Step 1: Check out the repository
+      - name: Check out repository
+        uses: actions/checkout@v2
+
+      # Step 2: Set up Node.js
+      - name: Set up Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v2
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      # --- FRONTEND ---
+      # Step 3: Cache frontend dependencies
+      - name: Cache frontend dependencies
+        uses: actions/cache@v3
+        with:
+          path: DevOps/brainbytes-multi-container/frontend/node_modules
+          key: ${{ runner.os }}-frontend-${{ matrix.node-version }}-${{ hashFiles('DevOps/brainbytes-multi-container/frontend/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-frontend-${{ matrix.node-version }}-
+
+      # Step 4: Install frontend dependencies
+      - name: Install frontend dependencies
+        working-directory: DevOps/brainbytes-multi-container/frontend
+        run: npm ci || npm install
+
+      # Step 5: Run ESLint and Prettier check on frontend
+      - name: Lint frontend code
+        working-directory: DevOps/brainbytes-multi-container/frontend
+        run: |
+          npm run lint:js -- --format json --output-file eslint-report-frontend.json || true
+          npx prettier --check . || echo "Prettier issues in frontend"
+
+      - name: Upload frontend lint report
+        uses: actions/upload-artifact@v4
+        with:
+          name: eslint-report-frontend-${{ matrix.node-version }}
+          path: DevOps/brainbytes-multi-container/frontend/eslint-report-frontend.json
+
+      # Step 6: Audit frontend dependencies
+      - name: Run npm audit on frontend
+        working-directory: DevOps/brainbytes-multi-container/frontend
+        run: npm audit --json || true
+
+      # --- BACKEND ---
+      # Step 7: Cache backend dependencies
+      - name: Cache backend dependencies
+        uses: actions/cache@v3
+        with:
+          path: DevOps/brainbytes-multi-container/backend/node_modules
+          key: ${{ runner.os }}-backend-${{ matrix.node-version }}-${{ hashFiles('DevOps/brainbytes-multi-container/backend/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-backend-${{ matrix.node-version }}-
+
+      # Step 8: Install backend dependencies
+      - name: Install backend dependencies
+        working-directory: DevOps/brainbytes-multi-container/backend
+        run: npm ci || npm install
+
+      # Step 9: Run ESLint and Prettier check on backend
+      - name: Lint backend code
+        working-directory: DevOps/brainbytes-multi-container/backend
+        run: |
+          npm run lint:js -- --format json --output-file eslint-report-backend.json || true
+          npx prettier --check . || echo "Prettier issues in backend"
+
+      - name: Upload backend lint report
+        uses: actions/upload-artifact@v4
+        with:
+          name: eslint-report-backend-${{ matrix.node-version }}
+          path: DevOps/brainbytes-multi-container/backend/eslint-report-backend.json
+
+      # Step 10: Audit backend dependencies
+      - name: Run npm audit on backend
+        working-directory: DevOps/brainbytes-multi-container/backend
+        run: npm audit --json || true

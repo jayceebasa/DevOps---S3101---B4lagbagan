@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<coverage generated="1750704178642" clover="3.2.0">
+  <project timestamp="1750704178642" name="All files">
+    <metrics statements="27" coveredstatements="25" conditionals="8" coveredconditionals="6" methods="7" coveredmethods="7" elements="42" coveredelements="38" complexity="0" loc="27" ncloc="27" packages="1" files="2" classes="2"/>
+    <file name="Chat.js" path="C:\Users\JAYCEE\Documents\GitHub\DevOps---S3101---B4lagbagan\DevOps\brainbytes-multi-container\frontend\components\Chat.js">
+      <metrics statements="19" coveredstatements="17" conditionals="6" coveredconditionals="4" methods="4" coveredmethods="4"/>
+      <line num="4" count="1" type="stmt"/>
+      <line num="5" count="3" type="stmt"/>
+      <line num="6" count="3" type="stmt"/>
+      <line num="7" count="3" type="stmt"/>
+      <line num="9" count="3" type="stmt"/>
+      <line num="10" count="1" type="stmt"/>
+      <line num="11" count="1" type="stmt"/>
+      <line num="12" count="1" type="stmt"/>
+      <line num="14" count="1" type="stmt"/>
+      <line num="15" count="1" type="stmt"/>
+      <line num="21" count="1" type="cond" truecount="1" falsecount="1"/>
+      <line num="22" count="0" type="stmt"/>
+      <line num="25" count="1" type="stmt"/>
+      <line num="26" count="1" type="stmt"/>
+      <line num="32" count="0" type="stmt"/>
+      <line num="34" count="1" type="stmt"/>
+      <line num="35" count="1" type="stmt"/>
+      <line num="39" count="3" type="stmt"/>
+      <line num="43" count="2" type="stmt"/>
+    </file>
+    <file name="ChatInput.js" path="C:\Users\JAYCEE\Documents\GitHub\DevOps---S3101---B4lagbagan\DevOps\brainbytes-multi-container\frontend\components\ChatInput.js">
+      <metrics statements="8" coveredstatements="8" conditionals="2" coveredconditionals="2" methods="3" coveredmethods="3"/>
+      <line num="3" count="2" type="stmt"/>
+      <line num="4" count="8" type="stmt"/>
+      <line num="6" count="8" type="stmt"/>
+      <line num="7" count="3" type="cond" truecount="2" falsecount="0"/>
+      <line num="8" count="2" type="stmt"/>
+      <line num="9" count="2" type="stmt"/>
+      <line num="13" count="8" type="stmt"/>
+      <line num="19" count="2" type="stmt"/>
+    </file>
+  </project>
+</coverage>

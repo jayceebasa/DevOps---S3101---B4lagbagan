@@ -1,10 +1,9 @@
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import Link from "next/link";
 import Head from "next/head";
 
 export default function Home() {
-  // ...existing code...
   const [conversationsBySubject, setConversationsBySubject] = useState({
     Math: [],
     Science: [],
@@ -21,13 +20,18 @@ export default function Home() {
   const [notification, setNotification] = useState("");
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [subjectToDelete, setSubjectToDelete] = useState(null);
+  const [isClient, setIsClient] = useState(false);
 
-  // Fetch messages and organize them by subject
+  useEffect(() => {
+    setIsClient(true);
+    fetchMessages();
+  }, []);
+
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
+
   const fetchMessages = async () => {
     try {
-      const response = await axios.get("http://localhost:3000/api/messages");
-
-      // Group messages by subject
+     const response = await axios.get(`${API_BASE_URL}/api/messages`);
       const messagesBySubject = {
         Math: [],
         Science: [],
@@ -38,22 +42,15 @@ export default function Home() {
       };
 
       response.data.forEach((message) => {
-        // Check if subject exists and is one of our predefined subjects
         const validSubjects = ["Math", "Science", "History", "Language", "Technology", "General"];
         const messageSubject = message.subject || "";
         const subject = validSubjects.includes(messageSubject) ? messageSubject : "General";
         messagesBySubject[subject].push(message);
       });
 
-      // Sort messages in each subject by timestamp
       Object.keys(messagesBySubject).forEach((subject) => {
         messagesBySubject[subject].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
       });
-
-      console.log(
-        "Organized messages by subject:",
-        Object.keys(messagesBySubject).map((subject) => `${subject}: ${messagesBySubject[subject].length} messages`)
-      );
 
       setConversationsBySubject(messagesBySubject);
       setLoading(false);
@@ -63,57 +60,30 @@ export default function Home() {
     }
   };
 
-  // Detect the likely subject from message text
   const detectSubject = (text) => {
     text = text.toLowerCase();
-
-    if (
-      text.includes("math") ||
-      text.includes("equation") ||
-      text.includes("calculate") ||
-      text.includes("algebra") ||
-      text.includes("geometry") ||
-      text.includes("number")
-    ) {
+    if (text.includes("math") || text.includes("equation") || text.includes("calculate") || 
+        text.includes("algebra") || text.includes("geometry") || text.includes("number")) {
       return "Math";
-    } else if (
-      text.includes("science") ||
-      text.includes("biology") ||
-      text.includes("chemistry") ||
-      text.includes("physics") ||
-      text.includes("molecule") ||
-      text.includes("atom")
-    ) {
+    } else if (text.includes("science") || text.includes("biology") || text.includes("chemistry") || 
+               text.includes("physics") || text.includes("molecule") || text.includes("atom")) {
       return "Science";
-    } else if (text.includes("history") || text.includes("war") || text.includes("century") || text.includes("ancient") || text.includes("civilization")) {
+    } else if (text.includes("history") || text.includes("war") || text.includes("century") || 
+               text.includes("ancient") || text.includes("civilization")) {
       return "History";
-    } else if (
-      text.includes("language") ||
-      text.includes("grammar") ||
-      text.includes("vocabulary") ||
-      text.includes("word") ||
-      text.includes("sentence") ||
-      text.includes("speak")
-    ) {
+    } else if (text.includes("language") || text.includes("grammar") || text.includes("vocabulary") || 
+               text.includes("word") || text.includes("sentence") || text.includes("speak")) {
       return "Language";
-    } else if (
-      text.includes("technology") ||
-      text.includes("computer") ||
-      text.includes("software") ||
-      text.includes("program") ||
-      text.includes("code") ||
-      text.includes("internet")
-    ) {
+    } else if (text.includes("technology") || text.includes("computer") || text.includes("software") || 
+               text.includes("program") || text.includes("code") || text.includes("internet")) {
       return "Technology";
     }
     return "General";
   };
 
-  // Handle subject change with notification
   const handleSubjectChange = (newSubject) => {
     if (subjectFilter !== newSubject) {
       setSubjectFilter(newSubject);
-      // Notification code removed
     }
   };
 
@@ -125,40 +95,31 @@ export default function Home() {
     return userCounts;
   };
 
-  const handleClearSubjectMessages = async (subject) => {
+  const handleClearSubjectMessages = (subject) => {
     setSubjectToDelete(subject);
     setIsDeleteModalOpen(true);
   };
 
-  // New function to handle confirmed deletion
   const confirmDelete = async () => {
+    if (!subjectToDelete) return;
+    
     try {
       setLoading(true);
-
-      // Call API to delete messages for this subject
-      const response = await axios.delete(`http://localhost:3000/api/messages/subject/${subjectToDelete}`);
-
-      // Update the local state to remove the cleared messages
+      const response = await axios.delete(`${API_BASE_URL}/api/messages/subject/${subjectToDelete}`);
       setConversationsBySubject((prev) => ({
         ...prev,
-        [subjectToDelete]: [], // Clear the messages for this subject
+        [subjectToDelete]: [],
       }));
-
-      // Show notification for successful deletion
       setNotification(`Cleared ${response.data.deletedCount} messages from ${subjectToDelete}`);
       setTimeout(() => setNotification(""), 3000);
-
-      // Close modal
-      setIsDeleteModalOpen(false);
-      setSubjectToDelete(null);
-      setLoading(false);
     } catch (error) {
       console.error("Error clearing messages:", error);
       setNotification(`Error: Could not clear ${subjectToDelete} messages`);
       setTimeout(() => setNotification(""), 3000);
-      setLoading(false);
+    } finally {
       setIsDeleteModalOpen(false);
       setSubjectToDelete(null);
+      setLoading(false);
     }
   };
 
@@ -170,66 +131,44 @@ export default function Home() {
       setIsTyping(true);
       const userMsg = newMessage;
       setNewMessage("");
-
-      // Detect subject for message
       const detectedSubject = detectSubject(userMsg);
-
-      // If the user has a subject filter selected, use that subject instead of auto-detecting
-      // This ensures messages stay in the currently selected conversation if there is one
       const targetSubject = subjectFilter || detectedSubject;
 
-      // Optimistically add user message to UI with subject
       const tempUserMsg = {
         _id: Date.now().toString(),
         text: userMsg,
         isUser: true,
-        subject: targetSubject, // Use the selected subject or detected one
+        subject: targetSubject,
         createdAt: new Date().toISOString(),
       };
 
-      // Add to the appropriate subject conversation
       setConversationsBySubject((prev) => ({
         ...prev,
         [targetSubject]: [...prev[targetSubject], tempUserMsg],
       }));
-
-      // Send to backend and get AI response with subject
-      const response = await axios.post("http://localhost:3000/api/messages", {
+      
+      const response = await axios.post(`${API_BASE_URL}/api/messages`, {
         text: userMsg,
-        subject: targetSubject, // Pass the subject to backend explicitly
+        subject: targetSubject,
+        sessionId: 'test-session',
       });
 
-      console.log("Message response with subject:", `User: ${response.data.userMessage.subject}, AI: ${response.data.aiMessage.subject}`);
-
-      // Update with real messages from server
       setConversationsBySubject((prev) => {
-        // Get the current conversation for this subject
         let updatedConversation = [...prev[targetSubject]];
-
-        // Remove temp message
         updatedConversation = updatedConversation.filter((msg) => msg._id !== tempUserMsg._id);
-
-        // Add real messages
         updatedConversation.push(response.data.userMessage, response.data.aiMessage);
-
-        // Return updated state
         return {
           ...prev,
           [targetSubject]: updatedConversation,
         };
       });
 
-      // Make sure we stay on the current subject view - important to keep us in the current conversation
       if (!subjectFilter) {
         handleSubjectChange(targetSubject);
       }
     } catch (error) {
-      // Error handling
       console.error("Error posting message:", error);
-
-      // Show error in the active conversation
       const errorSubject = subjectFilter || "General";
-
       setConversationsBySubject((prev) => ({
         ...prev,
         [errorSubject]: [
@@ -247,32 +186,29 @@ export default function Home() {
       setIsTyping(false);
     }
   };
-
-  // Scroll to bottom when messages change
+  // Scroll to the bottom of the messages when new messages are added
   useEffect(() => {
-    // Add a small delay to ensure DOM updates are complete
+    if (!isClient) return;
     const scrollTimer = setTimeout(() => {
       if (messageEndRef.current) {
         messageEndRef.current.scrollIntoView({ behavior: "smooth" });
       }
     }, 100);
-
     return () => clearTimeout(scrollTimer);
-  }, [subjectFilter, conversationsBySubject]);
+  }, [subjectFilter, conversationsBySubject, isTyping, isClient]);
 
-  // Load messages on component mount
-  useEffect(() => {
-    fetchMessages();
-  }, []);
+  const currentMessages = subjectFilter 
+    ? conversationsBySubject[subjectFilter] || [] 
+    : [].concat(...Object.values(conversationsBySubject));
 
-  // Get messages for current subject or all messages if no filter
-  const currentMessages = subjectFilter ? conversationsBySubject[subjectFilter] || [] : [].concat(...Object.values(conversationsBySubject));
-
-  // Count messages in each category for the filter buttons
   const messageCounts = {};
   Object.keys(conversationsBySubject).forEach((subject) => {
     messageCounts[subject] = conversationsBySubject[subject].length;
   });
+
+  if (!isClient) {
+    return <div className="container">Loading...</div>;
+  }
 
   return (
     <>
@@ -408,7 +344,7 @@ export default function Home() {
               </div>
             </div>
           </div>
-        )}
+        )}    
       </div>
 
       <style jsx global>{`
