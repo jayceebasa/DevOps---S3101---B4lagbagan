@@ -26,10 +26,11 @@ export default function Home() {
     setIsClient(true);
     fetchMessages();
   }, []);
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
 
   const fetchMessages = async () => {
     try {
-      const response = await axios.get("http://localhost:3000/api/messages");
+     const response = await axios.get(`${API_BASE_URL}/api/messages`);
       const messagesBySubject = {
         Math: [],
         Science: [],
@@ -103,7 +104,7 @@ export default function Home() {
     
     try {
       setLoading(true);
-      const response = await axios.delete(`http://localhost:3000/api/messages/subject/${subjectToDelete}`);
+      const response = await axios.delete(`${API_BASE_URL}/api/messages/subject/${subjectToDelete}`);
       setConversationsBySubject((prev) => ({
         ...prev,
         [subjectToDelete]: [],
@@ -145,7 +146,7 @@ export default function Home() {
         [targetSubject]: [...prev[targetSubject], tempUserMsg],
       }));
 
-      const response = await axios.post("http://localhost:3000/api/messages", {
+      const response = await axios.post('${API_BASE_URL}/api/messages', {
         text: userMsg,
         subject: targetSubject,
         sessionId: 'test-session',
