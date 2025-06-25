@@ -141,10 +141,10 @@ app.get('/api/messages', async (req, res) => {
 
 app.post('/api/messages', async (req, res) => {
   try {
-    const { text, subject = 'General', sessionId } = req.body;
+    const { text, subject = 'General', sessionId, userId } = req.body;
 
-    if (!text || !sessionId) {
-      return res.status(400).json({ error: 'Text and sessionId are required' });
+    if (!text || !sessionId || !userId) {
+      return res.status(400).json({ error: 'Text, sessionId, and userId are required' });
     }
 
     // Save the user message
@@ -153,11 +153,12 @@ app.post('/api/messages', async (req, res) => {
       isUser: true,
       subject,
       sessionId,
+      userId, // Associate the message with the user
     });
     await userMessage.save();
 
-    // Fetch chat history for the session
-    const chatHistory = await Message.find({ sessionId }).sort({ createdAt: 1 });
+    // Fetch chat history for the session and user
+    const chatHistory = await Message.find({ sessionId, userId }).sort({ createdAt: 1 });
 
     const timeoutDuration = process.env.TIMEOUT_DURATION || 15000;
 
@@ -179,6 +180,7 @@ app.post('/api/messages', async (req, res) => {
       isUser: false,
       subject,
       sessionId,
+      userId, // Associate the AI message with the user
     });
     await aiMessage.save();
 

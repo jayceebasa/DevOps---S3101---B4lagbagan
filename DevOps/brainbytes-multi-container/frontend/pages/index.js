@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef } from "react";
-import axios from "axios";
-import Link from "next/link";
-import Head from "next/head";
+import React, { useState, useEffect, useRef } from 'react';
+import axios from 'axios';
+import Link from 'next/link';
+import Head from 'next/head';
+import { nanoid } from 'nanoid';
 
 export default function Home() {
   const [conversationsBySubject, setConversationsBySubject] = useState({
@@ -12,12 +13,12 @@ export default function Home() {
     Technology: [],
     General: [],
   });
-  const [newMessage, setNewMessage] = useState("");
+  const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [isTyping, setIsTyping] = useState(false);
   const messageEndRef = useRef(null);
-  const [subjectFilter, setSubjectFilter] = useState("");
-  const [notification, setNotification] = useState("");
+  const [subjectFilter, setSubjectFilter] = useState('');
+  const [notification, setNotification] = useState('');
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [subjectToDelete, setSubjectToDelete] = useState(null);
   const [isClient, setIsClient] = useState(false);
@@ -27,11 +28,19 @@ export default function Home() {
     fetchMessages();
   }, []);
 
-  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
+  // Generate or retrieve the UUID
+  let userId = localStorage.getItem('userId');
+  if (!userId) {
+    userId = nanoid();
+    localStorage.setItem('userId', userId);
+  }
+
+  const API_BASE_URL =
+    process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000';
 
   const fetchMessages = async () => {
     try {
-     const response = await axios.get(`${API_BASE_URL}/api/messages`);
+      const response = await axios.get(`${API_BASE_URL}/api/messages`);
       const messagesBySubject = {
         Math: [],
         Science: [],
@@ -42,43 +51,83 @@ export default function Home() {
       };
 
       response.data.forEach((message) => {
-        const validSubjects = ["Math", "Science", "History", "Language", "Technology", "General"];
-        const messageSubject = message.subject || "";
-        const subject = validSubjects.includes(messageSubject) ? messageSubject : "General";
+        const validSubjects = [
+          'Math',
+          'Science',
+          'History',
+          'Language',
+          'Technology',
+          'General',
+        ];
+        const messageSubject = message.subject || '';
+        const subject = validSubjects.includes(messageSubject)
+          ? messageSubject
+          : 'General';
         messagesBySubject[subject].push(message);
       });
 
       Object.keys(messagesBySubject).forEach((subject) => {
-        messagesBySubject[subject].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+        messagesBySubject[subject].sort(
+          (a, b) => new Date(a.createdAt) - new Date(b.createdAt)
+        );
       });
 
       setConversationsBySubject(messagesBySubject);
       setLoading(false);
     } catch (error) {
-      console.error("Error fetching messages:", error);
+      console.error('Error fetching messages:', error);
       setLoading(false);
     }
   };
 
   const detectSubject = (text) => {
     text = text.toLowerCase();
-    if (text.includes("math") || text.includes("equation") || text.includes("calculate") || 
-        text.includes("algebra") || text.includes("geometry") || text.includes("number")) {
-      return "Math";
-    } else if (text.includes("science") || text.includes("biology") || text.includes("chemistry") || 
-               text.includes("physics") || text.includes("molecule") || text.includes("atom")) {
-      return "Science";
-    } else if (text.includes("history") || text.includes("war") || text.includes("century") || 
-               text.includes("ancient") || text.includes("civilization")) {
-      return "History";
-    } else if (text.includes("language") || text.includes("grammar") || text.includes("vocabulary") || 
-               text.includes("word") || text.includes("sentence") || text.includes("speak")) {
-      return "Language";
-    } else if (text.includes("technology") || text.includes("computer") || text.includes("software") || 
-               text.includes("program") || text.includes("code") || text.includes("internet")) {
-      return "Technology";
+    if (
+      text.includes('math') ||
+      text.includes('equation') ||
+      text.includes('calculate') ||
+      text.includes('algebra') ||
+      text.includes('geometry') ||
+      text.includes('number')
+    ) {
+      return 'Math';
+    } else if (
+      text.includes('science') ||
+      text.includes('biology') ||
+      text.includes('chemistry') ||
+      text.includes('physics') ||
+      text.includes('molecule') ||
+      text.includes('atom')
+    ) {
+      return 'Science';
+    } else if (
+      text.includes('history') ||
+      text.includes('war') ||
+      text.includes('century') ||
+      text.includes('ancient') ||
+      text.includes('civilization')
+    ) {
+      return 'History';
+    } else if (
+      text.includes('language') ||
+      text.includes('grammar') ||
+      text.includes('vocabulary') ||
+      text.includes('word') ||
+      text.includes('sentence') ||
+      text.includes('speak')
+    ) {
+      return 'Language';
+    } else if (
+      text.includes('technology') ||
+      text.includes('computer') ||
+      text.includes('software') ||
+      text.includes('program') ||
+      text.includes('code') ||
+      text.includes('internet')
+    ) {
+      return 'Technology';
     }
-    return "General";
+    return 'General';
   };
 
   const handleSubjectChange = (newSubject) => {
@@ -90,7 +139,9 @@ export default function Home() {
   const getUserMessageCountsBySubject = () => {
     const userCounts = {};
     Object.keys(conversationsBySubject).forEach((subject) => {
-      userCounts[subject] = conversationsBySubject[subject].filter((msg) => msg.isUser).length;
+      userCounts[subject] = conversationsBySubject[subject].filter(
+        (msg) => msg.isUser
+      ).length;
     });
     return userCounts;
   };
@@ -102,20 +153,24 @@ export default function Home() {
 
   const confirmDelete = async () => {
     if (!subjectToDelete) return;
-    
+
     try {
       setLoading(true);
-      const response = await axios.delete(`${API_BASE_URL}/api/messages/subject/${subjectToDelete}`);
+      const response = await axios.delete(
+        `${API_BASE_URL}/api/messages/subject/${subjectToDelete}`
+      );
       setConversationsBySubject((prev) => ({
         ...prev,
         [subjectToDelete]: [],
       }));
-      setNotification(`Cleared ${response.data.deletedCount} messages from ${subjectToDelete}`);
-      setTimeout(() => setNotification(""), 3000);
+      setNotification(
+        `Cleared ${response.data.deletedCount} messages from ${subjectToDelete}`
+      );
+      setTimeout(() => setNotification(''), 3000);
     } catch (error) {
-      console.error("Error clearing messages:", error);
+      console.error('Error clearing messages:', error);
       setNotification(`Error: Could not clear ${subjectToDelete} messages`);
-      setTimeout(() => setNotification(""), 3000);
+      setTimeout(() => setNotification(''), 3000);
     } finally {
       setIsDeleteModalOpen(false);
       setSubjectToDelete(null);
@@ -130,7 +185,7 @@ export default function Home() {
     try {
       setIsTyping(true);
       const userMsg = newMessage;
-      setNewMessage("");
+      setNewMessage('');
       const detectedSubject = detectSubject(userMsg);
       const targetSubject = subjectFilter || detectedSubject;
 
@@ -146,7 +201,7 @@ export default function Home() {
         ...prev,
         [targetSubject]: [...prev[targetSubject], tempUserMsg],
       }));
-      
+
       const response = await axios.post(`${API_BASE_URL}/api/messages`, {
         text: userMsg,
         subject: targetSubject,
@@ -155,8 +210,13 @@ export default function Home() {
 
       setConversationsBySubject((prev) => {
         let updatedConversation = [...prev[targetSubject]];
-        updatedConversation = updatedConversation.filter((msg) => msg._id !== tempUserMsg._id);
-        updatedConversation.push(response.data.userMessage, response.data.aiMessage);
+        updatedConversation = updatedConversation.filter(
+          (msg) => msg._id !== tempUserMsg._id
+        );
+        updatedConversation.push(
+          response.data.userMessage,
+          response.data.aiMessage
+        );
         return {
           ...prev,
           [targetSubject]: updatedConversation,
@@ -167,8 +227,8 @@ export default function Home() {
         handleSubjectChange(targetSubject);
       }
     } catch (error) {
-      console.error("Error posting message:", error);
-      const errorSubject = subjectFilter || "General";
+      console.error('Error posting message:', error);
+      const errorSubject = subjectFilter || 'General';
       setConversationsBySubject((prev) => ({
         ...prev,
         [errorSubject]: [
@@ -191,14 +251,14 @@ export default function Home() {
     if (!isClient) return;
     const scrollTimer = setTimeout(() => {
       if (messageEndRef.current) {
-        messageEndRef.current.scrollIntoView({ behavior: "smooth" });
+        messageEndRef.current.scrollIntoView({ behavior: 'smooth' });
       }
     }, 100);
     return () => clearTimeout(scrollTimer);
   }, [subjectFilter, conversationsBySubject, isTyping, isClient]);
 
-  const currentMessages = subjectFilter 
-    ? conversationsBySubject[subjectFilter] || [] 
+  const currentMessages = subjectFilter
+    ? conversationsBySubject[subjectFilter] || []
     : [].concat(...Object.values(conversationsBySubject));
 
   const messageCounts = {};
@@ -215,7 +275,10 @@ export default function Home() {
       <Head>
         <title>BrainBytes AI Tutor</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+          rel="stylesheet"
+        />
       </Head>
 
       <div className="container">
@@ -230,14 +293,27 @@ export default function Home() {
         {notification && <div className="notification">{notification}</div>}
 
         <div className="subject-filters">
-          <button className={`filter-btn ${subjectFilter === "" ? "active" : ""}`} onClick={() => handleSubjectChange("")}>
-            All ({[].concat(...Object.values(conversationsBySubject)).filter((msg) => msg.isUser).length})
+          <button
+            className={`filter-btn ${subjectFilter === '' ? 'active' : ''}`}
+            onClick={() => handleSubjectChange('')}
+          >
+            All (
+            {
+              []
+                .concat(...Object.values(conversationsBySubject))
+                .filter((msg) => msg.isUser).length
+            }
+            )
           </button>
 
           {Object.keys(conversationsBySubject).map((subject) => {
             const userCount = getUserMessageCountsBySubject()[subject];
             return (
-              <button key={subject} className={`filter-btn ${subjectFilter === subject ? "active" : ""}`} onClick={() => handleSubjectChange(subject)}>
+              <button
+                key={subject}
+                className={`filter-btn ${subjectFilter === subject ? 'active' : ''}`}
+                onClick={() => handleSubjectChange(subject)}
+              >
                 <span className="filter-content">
                   <span>{subject}</span>
                   <span className="count-badge">{userCount}</span>
@@ -249,7 +325,8 @@ export default function Home() {
                       e.stopPropagation();
                       handleClearSubjectMessages(subject);
                     }}
-                    title={`Clear all ${subject} messages`}>
+                    title={`Clear all ${subject} messages`}
+                  >
                     🗑️
                   </span>
                 )}
@@ -273,22 +350,34 @@ export default function Home() {
                   <p>
                     {subjectFilter
                       ? `Start a new conversation about ${subjectFilter}!`
-                      : "Ask me any question about math, science, history, or other subjects."}
+                      : 'Ask me any question about math, science, history, or other subjects.'}
                   </p>
                 </div>
               ) : (
                 <ul>
                   {currentMessages.map((message) => (
-                    <li key={message._id} className={`message ${message.isUser ? "user" : "ai"}`}>
+                    <li
+                      key={message._id}
+                      className={`message ${message.isUser ? 'user' : 'ai'}`}
+                    >
                       <div className="message-content">{message.text}</div>
                       <div className="message-meta">
-                        <span className="sender">{message.isUser ? "You" : "AI Tutor"}</span>
+                        <span className="sender">
+                          {message.isUser ? 'You' : 'AI Tutor'}
+                        </span>
                         <span className="separator">•</span>
-                        <span className="time">{new Date(message.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+                        <span className="time">
+                          {new Date(message.createdAt).toLocaleTimeString([], {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </span>
                         {message.subject && !subjectFilter && (
                           <>
                             <span className="separator">•</span>
-                            <span className="subject-tag">{message.subject}</span>
+                            <span className="subject-tag">
+                              {message.subject}
+                            </span>
                           </>
                         )}
                       </div>
@@ -318,11 +407,15 @@ export default function Home() {
             type="text"
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
-            placeholder={subjectFilter ? `Ask a question about ${subjectFilter}...` : "Ask a question..."}
+            placeholder={
+              subjectFilter
+                ? `Ask a question about ${subjectFilter}...`
+                : 'Ask a question...'
+            }
             disabled={isTyping}
           />
           <button type="submit" disabled={isTyping}>
-            {isTyping ? "Sending..." : "Send"}
+            {isTyping ? 'Sending...' : 'Send'}
           </button>
         </form>
 
@@ -333,9 +426,15 @@ export default function Home() {
                 <div className="modal-icon">⚠️</div>
                 <h3>Delete Confirmation</h3>
               </div>
-              <p>Are you sure you want to clear all {subjectToDelete} messages? This cannot be undone.</p>
+              <p>
+                Are you sure you want to clear all {subjectToDelete} messages?
+                This cannot be undone.
+              </p>
               <div className="modal-actions">
-                <button className="cancel-btn" onClick={() => setIsDeleteModalOpen(false)}>
+                <button
+                  className="cancel-btn"
+                  onClick={() => setIsDeleteModalOpen(false)}
+                >
                   Cancel
                 </button>
                 <button className="delete-btn" onClick={confirmDelete}>
@@ -344,7 +443,7 @@ export default function Home() {
               </div>
             </div>
           </div>
-        )}    
+        )}
       </div>
 
       <style jsx global>{`
@@ -355,7 +454,11 @@ export default function Home() {
         }
 
         body {
-          font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+          font-family:
+            'Inter',
+            -apple-system,
+            BlinkMacSystemFont,
+            sans-serif;
           color: #333;
           background-color: #f5f7fa;
           line-height: 1.6;
@@ -478,7 +581,9 @@ export default function Home() {
           flex: 1;
           background-color: #ffffff;
           border-radius: 12px;
-          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+          box-shadow:
+            0 4px 6px -1px rgba(0, 0, 0, 0.05),
+            0 2px 4px -1px rgba(0, 0, 0, 0.03);
           margin-bottom: 24px;
           overflow: hidden;
           display: flex;
@@ -669,7 +774,9 @@ export default function Home() {
           border-radius: 12px;
           font-size: 1rem;
           outline: none;
-          transition: border-color 0.2s, box-shadow 0.2s;
+          transition:
+            border-color 0.2s,
+            box-shadow 0.2s;
         }
 
         .message-form input:focus {
@@ -790,255 +897,255 @@ export default function Home() {
         }
 
         .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: rgba(0, 0, 0, 0.75);
-            backdrop-filter: blur(5px);
-            -webkit-backdrop-filter: blur(5px);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-          }
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background-color: rgba(0, 0, 0, 0.75);
+          backdrop-filter: blur(5px);
+          -webkit-backdrop-filter: blur(5px);
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          z-index: 1000;
+          animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
 
-          header {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 10px;
-          }
+        header {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 10px;
+        }
 
-          header nav {
-            width: 100%;
-            justify-content: flex-start;
-          }
-          .filter-btn {
-            padding: 8px 16px;
-            background-color: #ffffff;
-            color: #4b5563;
-            border: 1px solid #e5e7eb;
-            border-radius: 8px;
-            font-size: 0.875rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s;
-            white-space: nowrap;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 8px;
-          }
+        header nav {
+          width: 100%;
+          justify-content: flex-start;
+        }
+        .filter-btn {
+          padding: 8px 16px;
+          background-color: #ffffff;
+          color: #4b5563;
+          border: 1px solid #e5e7eb;
+          border-radius: 8px;
+          font-size: 0.875rem;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.2s;
+          white-space: nowrap;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 8px;
+        }
 
-          .filter-content {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-          }
+        .filter-content {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
 
-          .count-badge {
-            background-color: #e5e7eb;
-            color: #4b5563;
-            font-size: 0.75rem;
-            font-weight: 600;
-            padding: 2px 8px;
-            border-radius: 12px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            min-width: 20px;
-          }
+        .count-badge {
+          background-color: #e5e7eb;
+          color: #4b5563;
+          font-size: 0.75rem;
+          font-weight: 600;
+          padding: 2px 8px;
+          border-radius: 12px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          min-width: 20px;
+        }
 
-          .filter-btn.active .count-badge {
-            background-color: rgba(255, 255, 255, 0.2);
-            color: inherit;
-          }
+        .filter-btn.active .count-badge {
+          background-color: rgba(255, 255, 255, 0.2);
+          color: inherit;
+        }
 
-          .clear-icon {
-            font-size: 0.8rem;
-            opacity: 0.6;
-            padding: 2px 4px;
-            border-radius: 4px;
-            transition: all 0.2s;
-            margin-left: 2px;
-          }
+        .clear-icon {
+          font-size: 0.8rem;
+          opacity: 0.6;
+          padding: 2px 4px;
+          border-radius: 4px;
+          transition: all 0.2s;
+          margin-left: 2px;
+        }
 
-          .clear-icon:hover {
+        .clear-icon:hover {
+          opacity: 1;
+          background-color: rgba(239, 68, 68, 0.1);
+        }
+
+        .filter-btn.active .clear-icon {
+          color: white;
+        }
+
+        .filter-btn.active .clear-icon:hover {
+          background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .clear-subject-btn {
+          position: absolute;
+          top: -8px;
+          right: -6px;
+          width: 16px;
+          height: 16px;
+          background-color: #e5e7eb;
+          color: #6b7280;
+          border: none;
+          border-radius: 50%;
+          font-size: 12px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: all 0.2s;
+          padding: 0;
+          line-height: 1;
+        }
+
+        .clear-subject-btn:hover {
+          background-color: #ef4444;
+          color: white;
+        }
+
+        .modal {
+          background-color: white;
+          border-radius: 20px;
+          padding: 32px;
+          width: 90%;
+          max-width: 450px;
+          box-shadow:
+            0 20px 25px -5px rgba(0, 0, 0, 0.2),
+            0 10px 10px -5px rgba(0, 0, 0, 0.15);
+          animation: modalSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+          transform-origin: center;
+          overflow: hidden;
+          border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        @keyframes modalSlideIn {
+          from {
+            opacity: 0;
+            transform: scale(0.95);
+          }
+          to {
             opacity: 1;
-            background-color: rgba(239, 68, 68, 0.1);
+            transform: scale(1);
           }
+        }
 
-          .filter-btn.active .clear-icon {
-            color: white;
-          }
+        .modal-header {
+          display: flex;
+          align-items: center;
+          margin-bottom: 24px;
+        }
 
-          .filter-btn.active .clear-icon:hover {
-            background-color: rgba(255, 255, 255, 0.2);
-          }
+        .modal-icon {
+          background-color: rgba(239, 68, 68, 0.15);
+          color: #ef4444;
+          width: 48px;
+          height: 48px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin-right: 20px;
+          font-size: 1.5rem;
+          box-shadow: 0 0 0 8px rgba(239, 68, 68, 0.05);
+        }
 
-          .clear-subject-btn {
-            position: absolute;
-            top: -8px;
-            right: -6px;
-            width: 16px;
-            height: 16px;
-            background-color: #e5e7eb;
-            color: #6b7280;
-            border: none;
-            border-radius: 50%;
-            font-size: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.2s;
-            padding: 0;
-            line-height: 1;
-          }
+        .modal h3 {
+          margin: 0;
+          color: #111827;
+          font-size: 1.4rem;
+          font-weight: 600;
+        }
 
-          .clear-subject-btn:hover {
-            background-color: #ef4444;
-            color: white;
-          }
+        .modal p {
+          margin-bottom: 32px;
+          color: #4b5563;
+          padding-left: 68px; /* Increased to align with larger icon */
+          line-height: 1.6;
+          font-size: 1.05rem;
+        }
 
-          
+        .modal-actions {
+          display: flex;
+          justify-content: flex-end;
+          gap: 16px;
+        }
 
+        .cancel-btn {
+          padding: 12px 24px;
+          background-color: transparent;
+          color: #4b5563;
+          border: 1px solid #e5e7eb;
+          border-radius: 12px;
+          font-size: 1rem;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+
+        .cancel-btn:hover {
+          background-color: #f3f4f6;
+          border-color: #d1d5db;
+        }
+
+        .delete-btn {
+          padding: 12px 24px;
+          background-color: #ef4444;
+          color: white;
+          border: none;
+          border-radius: 12px;
+          font-size: 1rem;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.2s;
+          box-shadow: 0 1px 3px rgba(239, 68, 68, 0.3);
+        }
+
+        .delete-btn:hover {
+          background-color: #dc2626;
+          transform: translateY(-2px);
+          box-shadow: 0 4px 8px rgba(239, 68, 68, 0.25);
+        }
+
+        .delete-btn:active {
+          transform: translateY(0);
+          box-shadow: 0 1px 3px rgba(239, 68, 68, 0.2);
+        }
+
+        /* Add responsive adjustments in your media queries */
+        @media (max-width: 480px) {
           .modal {
-            background-color: white;
-            border-radius: 20px;
-            padding: 32px;
-            width: 90%;
-            max-width: 450px;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.15);
-            animation: modalSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-            transform-origin: center;
-            overflow: hidden;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-          }
-
-          @keyframes modalSlideIn {
-            from {
-              opacity: 0;
-              transform: scale(0.95);
-            }
-            to {
-              opacity: 1;
-              transform: scale(1);
-            }
-          }
-
-          .modal-header {
-            display: flex;
-            align-items: center;
-            margin-bottom: 24px;
+            padding: 24px;
+            max-width: 90%;
           }
 
           .modal-icon {
-            background-color: rgba(239, 68, 68, 0.15);
-            color: #ef4444;
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-right: 20px;
-            font-size: 1.5rem;
-            box-shadow: 0 0 0 8px rgba(239, 68, 68, 0.05);
-          }
-
-          .modal h3 {
-            margin: 0;
-            color: #111827;
-            font-size: 1.4rem;
-            font-weight: 600;
+            width: 40px;
+            height: 40px;
+            font-size: 1.25rem;
+            margin-right: 16px;
           }
 
           .modal p {
-            margin-bottom: 32px;
-            color: #4b5563;
-            padding-left: 68px; /* Increased to align with larger icon */
-            line-height: 1.6;
-            font-size: 1.05rem;
+            padding-left: 56px;
+            font-size: 1rem;
           }
 
           .modal-actions {
-            display: flex;
-            justify-content: flex-end;
-            gap: 16px;
+            gap: 12px;
           }
 
-          .cancel-btn {
-            padding: 12px 24px;
-            background-color: transparent;
-            color: #4b5563;
-            border: 1px solid #e5e7eb;
-            border-radius: 12px;
-            font-size: 1rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s;
-          }
-
-          .cancel-btn:hover {
-            background-color: #f3f4f6;
-            border-color: #d1d5db;
-          }
-
+          .cancel-btn,
           .delete-btn {
-            padding: 12px 24px;
-            background-color: #ef4444;
-            color: white;
-            border: none;
-            border-radius: 12px;
-            font-size: 1rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s;
-            box-shadow: 0 1px 3px rgba(239, 68, 68, 0.3);
+            padding: 10px 18px;
+            font-size: 0.9rem;
           }
-
-          .delete-btn:hover {
-            background-color: #dc2626;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(239, 68, 68, 0.25);
-          }
-
-          .delete-btn:active {
-            transform: translateY(0);
-            box-shadow: 0 1px 3px rgba(239, 68, 68, 0.2);
-          }
-
-          /* Add responsive adjustments in your media queries */
-          @media (max-width: 480px) {
-            .modal {
-              padding: 24px;
-              max-width: 90%;
-            }
-
-            .modal-icon {
-              width: 40px;
-              height: 40px;
-              font-size: 1.25rem;
-              margin-right: 16px;
-            }
-
-            .modal p {
-              padding-left: 56px;
-              font-size: 1rem;
-            }
-
-            .modal-actions {
-              gap: 12px;
-            }
-
-            .cancel-btn,
-            .delete-btn {
-              padding: 10px 18px;
-              font-size: 0.9rem;
-            }
         }
       `}</style>
     </>
