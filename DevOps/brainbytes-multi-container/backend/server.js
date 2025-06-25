@@ -156,13 +156,16 @@ app.post('/api/messages', async (req, res) => {
     });
     await userMessage.save();
 
+    // Fetch chat history for the session
+    const chatHistory = await Message.find({ sessionId }).sort({ createdAt: 1 });
+
     const timeoutDuration = process.env.TIMEOUT_DURATION || 15000;
 
     const timeoutPromise = new Promise((_, reject) =>
       setTimeout(() => reject(new Error('Request timeout')), timeoutDuration)
     );
 
-    const aiResultPromise = aiService.generateResponse(text, subject);
+    const aiResultPromise = aiService.generateResponse(text, subject, chatHistory);
 
     const aiResult = await Promise.race([aiResultPromise, timeoutPromise]).catch((error) => {
       console.error('AI response timed out or failed:', error);
