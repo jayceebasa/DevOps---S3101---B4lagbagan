@@ -20,9 +20,8 @@ services:
     volumes:
       - ./backend:/usr/src/app
       - /usr/src/app/node_modules
-    environment:
-      - GEMINI_API_KEY=AIzaSyASmi0JYBH_Arv2qOXJGJLq5SMHpXP6MUs
-      - HUGGINGFACE_TOKEN=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
+    env_file:
+        - ./backend/.env
     depends_on:
       - mongo
     restart: unless-stopped
