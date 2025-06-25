@@ -47,7 +47,6 @@ Guidelines:
 
     // Call the Hugging Face API with the enhanced prompt
     const chatCompletion = await client.chatCompletion({
-      provider: "nebius",
       model: "deepseek-ai/DeepSeek-V3-0324",
       messages: [
         {
