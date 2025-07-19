@@ -400,8 +400,20 @@ jobs:
    - This workflow supports manual triggering via the `workflow_dispatch` event.
    - Follow the steps above to trigger it manually.
 
-## Troubleshooting Instructions
+## Workflow Status
+Test Workflow
+[![BrainBytes Test](https://github.com/jayceebasa/DevOps---S3101---B4lagbagan/actions/workflows/test.yml/badge.svg)](https://github.com/jayceebasa/DevOps---S3101---B4lagbagan/actions/workflows/test.yml)
 
+Lint Workflow
+[![BrainBytes Lint](https://github.com/jayceebasa/DevOps---S3101---B4lagbagan/actions/workflows/lint.yml/badge.svg)](https://github.com/jayceebasa/DevOps---S3101---B4lagbagan/actions/workflows/lint.yml)
+
+Docker Build Workflow
+[![BrainBytes Docker Build](https://github.com/jayceebasa/DevOps---S3101---B4lagbagan/actions/workflows/docker-build.yml/badge.svg)](https://github.com/jayceebasa/DevOps---S3101---B4lagbagan/actions/workflows/docker-build.yml)
+
+Deploy Workflow
+[![BrainBytes Deploy](https://github.com/jayceebasa/DevOps---S3101---B4lagbagan/actions/workflows/deploy.yml/badge.svg)](https://github.com/jayceebasa/DevOps---S3101---B4lagbagan/actions/workflows/deploy.yml)
+
+## Troubleshooting Instructions
 Common Issues and Fixes
 
 1.   Dependency Caching Issues  :
