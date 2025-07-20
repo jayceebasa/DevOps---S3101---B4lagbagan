@@ -1,11 +1,4 @@
-const express = require('express');
-const mongoose = require('mongoose');
-const cors = require('cors');
-const dotenv = require('dotenv');
-const aiService = require('./aiService');
-// Start metrics server for Prometheus
-const metrics = require('./monitoring/metrics');
-const Message = require('./models/Message'); // Import the Message model
+// ...existing code...
 
 // Middleware
 app.use(cors());
@@ -64,14 +57,6 @@ app.get('/api/users/stats', async (req, res) => {
     res.status(500).json({ error: 'Failed to get user stats' });
   }
 });
-const express = require('express');
-const mongoose = require('mongoose');
-const cors = require('cors');
-const dotenv = require('dotenv');
-const aiService = require('./aiService');
-// Start metrics server for Prometheus
-const metrics = require('./monitoring/metrics');
-const Message = require('./models/Message'); // Import the Message model
 const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/brainbytes';
 
 dotenv.config(); // Load environment variables
