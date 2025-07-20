@@ -1,0 +1,47 @@
+groups:
+  - name: brainbytes-alerts
+    rules:
+      - alert: BackendDown
+        expr: up{job="brainbytes-backend"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "BrainBytes backend is down"
+          description: "No metrics have been scraped from the backend for 1 minute."
+
+      - alert: HighErrorRate
+        expr: increase(brainbytes_http_requests_total{status=~\"5..\"}[5m]) > 5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High error rate detected"
+          description: "More than 5 server errors (5xx) in the last 5 minutes."
+
+      - alert: HighRequestLatency
+        expr: histogram_quantile(0.95, sum(rate(brainbytes_http_request_duration_seconds_bucket[5m])) by (le)) > 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High request latency"
+          description: "95th percentile request latency is over 1 second for 5 minutes."
+
+      - alert: NodeExporterDown
+        expr: up{job="node-exporter"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Node Exporter is down"
+          description: "No metrics have been scraped from node-exporter for 1 minute."
+
+      - alert: CadvisorDown
+        expr: up{job="cadvisor"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "cAdvisor is down"
+          description: "No metrics have been scraped from cAdvisor for 1 minute."
