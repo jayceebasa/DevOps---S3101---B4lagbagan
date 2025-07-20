@@ -1,4 +1,16 @@
-// ...existing code...
+const express = require('express');
+const mongoose = require('mongoose');
+const cors = require('cors');
+const dotenv = require('dotenv');
+const aiService = require('./aiService');
+const metrics = require('./monitoring/metrics');
+const Message = require('./models/Message');
+
+dotenv.config(); // Load environment variables
+
+const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/brainbytes';
+const app = express();
+const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(cors());
@@ -7,8 +19,6 @@ app.use(metrics.metricsMiddleware); // <-- Add this line to enable Prometheus HT
 
 // Initialize AI model
 aiService.initializeAI();
-
-// ...existing code...
 
 // Place this route after app is initialized
 app.get('/api/users/stats', async (req, res) => {
@@ -57,20 +67,6 @@ app.get('/api/users/stats', async (req, res) => {
     res.status(500).json({ error: 'Failed to get user stats' });
   }
 });
-const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/brainbytes';
-
-dotenv.config(); // Load environment variables
-
-const app = express();
-const PORT = process.env.PORT || 3000;
-
-// Middleware
-app.use(cors());
-app.use(express.json());
-app.use(metrics.metricsMiddleware); // <-- Add this line to enable Prometheus HTTP metrics
-
-// Initialize AI model
-aiService.initializeAI();
 
 // Connect to MongoDB
 const connectWithRetry = () => {
