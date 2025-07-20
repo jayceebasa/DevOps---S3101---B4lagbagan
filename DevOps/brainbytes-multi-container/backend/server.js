@@ -228,18 +228,140 @@ app.post('/api/messages', async (req, res) => {
   }
 });
 
-// Improved: Return all messages for the user, grouped by subject
-app.get('/api/chat/history/:userEmail', async (req, res) => {
+app.delete('/api/messages/subject/:subject', async (req, res) => {
   try {
-    const { userEmail } = req.params;
-    if (!userEmail) {
-      return res.status(400).json({ error: 'userEmail is required' });
+    const { subject } = req.params;
+
+    const validSubjects = [
+      'Math',
+      'Science',
+      'History',
+      'Language',
+      'Technology',
+      'General',
+    ];
+    const result =
+      subject === 'General'
+        ? await Message.deleteMany({
+            $or: [
+              { subject: 'General' },
+              { subject: { $exists: false } },
+              { subject: null },
+              { subject: '' },
+              { subject: { $nin: validSubjects } },
+            ],
+          })
+        : await Message.deleteMany({
+            subject: new RegExp(`^${subject}$`, 'i'),
+          });
+
+    res.json({
+      message: `Deleted ${result.deletedCount} messages from subject: ${subject}`,
+      deletedCount: result.deletedCount,
+    });
+  } catch (err) {
+    console.error('Error deleting messages:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Learning material routes
+app.post('/api/materials', async (req, res) => {
+  try {
+    const material = new LearningMaterial(req.body);
+    await material.save();
+    res.status(201).json(material);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.get('/api/materials', async (req, res) => {
+  try {
+    const materials = await LearningMaterial.find();
+    res.json(materials);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get current user profile
+app.get('/api/users/me', async (req, res) => {
+  try {
+    let user = await UserProfile.findOne();
+
+    if (!user) {
+      user = new UserProfile({
+        name: 'John Doe',
+        email: 'john.doe@example.com',
+        preferredSubjects: ['Math', 'Technology'],
+        joinDate: new Date('2024-11-15'),
+      });
+      await user.save();
     }
-    // Fetch all messages for this user, across all sessions
-    const messages = await Message.find({ userEmail }).sort({ createdAt: 1 });
+
+    res.json(user);
+  } catch (err) {
+    console.error('Error fetching user:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
+
+
+app.post('/api/chat/send', async (req, res) => {
+  try {
+    const { message, sessionId } = req.body;
+
+    if (!message || !sessionId) {
+      return res
+        .status(400)
+        .json({ error: 'Message and sessionId are required' });
+    }
+
+    // Save the user message
+    const userMessage = new Message({
+      text: message,
+      isUser: true,
+      sessionId,
+    });
+    await userMessage.save();
+
+    // Generate AI response
+    const aiResponse = await aiService.generateResponse(message);
+
+    // Save the AI message
+    const aiMessage = new Message({
+      text: aiResponse.response,
+      isUser: false,
+      sessionId,
+    });
+    await aiMessage.save();
+
+    res.status(200).json({
+      userMessage,
+      aiMessage,
+    });
+  } catch (err) {
+    console.error('Error in /api/chat/send:', err);
+    res.status(500).json({ error: 'Failed to process the message' });
+  }
+});
+
+app.get('/api/chat/history/:sessionId', async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    const { userEmail } = req.query;
+
+    if (!sessionId || !userEmail) {
+      return res.status(400).json({ error: 'Session ID and userEmail are required' });
+    }
+
+    const messages = await Message.find({ sessionId, userEmail }).sort({ createdAt: 1 });
     res.status(200).json({ messages });
   } catch (err) {
-    console.error('Error in /api/chat/history/:userEmail:', err);
+    console.error('Error in /api/chat/history/:sessionId:', err);
     res.status(500).json({ error: 'Failed to retrieve chat history' });
   }
 });
