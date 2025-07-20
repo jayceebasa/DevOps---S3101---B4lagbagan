@@ -288,18 +288,28 @@ app.get('/api/materials', async (req, res) => {
 // Get current user profile
 app.get('/api/users/me', async (req, res) => {
   try {
-    let user = await UserProfile.findOne();
-
+    // Try to get email from query param, header, or session (if using auth middleware)
+    let email = req.query.email || req.headers["x-user-email"];
+    // Fallback: try to get from next-auth session cookie if available (not implemented here)
+    if (!email && req.body && req.body.email) email = req.body.email;
+    // If not provided, return error
+    if (!email) {
+      return res.status(400).json({ error: "Email is required to fetch user profile" });
+    }
+    let user = await UserProfile.findOne({ email });
     if (!user) {
+      // Optionally, get name/avatar from query/body if available
+      const name = req.query.name || req.body?.name || 'New User';
+      const avatar = req.query.avatar || req.body?.avatar || null;
       user = new UserProfile({
-        name: 'John Doe',
-        email: 'john.doe@example.com',
+        name,
+        email,
+        avatar,
         preferredSubjects: ['Math', 'Technology'],
-        joinDate: new Date('2024-11-15'),
+        joinDate: new Date(),
       });
       await user.save();
     }
-
     res.json(user);
   } catch (err) {
     console.error('Error fetching user:', err);

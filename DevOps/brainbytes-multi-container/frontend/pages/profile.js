@@ -55,9 +55,10 @@ export default function Profile() {
       let userResponse = { data: {} };
       let statsResponse = { data: {} };
       try {
+        // Always pass Google email to backend so it fetches/creates the correct user
         [userResponse, statsResponse] = await Promise.all([
-          axios.get(`${API_BASE_URL}/api/users/me`),
-          axios.get(`${API_BASE_URL}/api/users/stats`),
+          axios.get(`${API_BASE_URL}/api/users/me`, { params: { email: googleEmail, name: googleName, avatar: googleAvatar } }),
+          axios.get(`${API_BASE_URL}/api/users/stats`, { params: { email: googleEmail } }),
         ]);
       } catch (e) {
         // fallback to Google session only
