@@ -5,6 +5,7 @@ const messageSchema = new mongoose.Schema({
   isUser: { type: Boolean, required: true },
   sessionId: { type: String, required: true },
   userEmail: { type: String, required: true },
+  subject: { type: String, default: 'General' },
   createdAt: { type: Date, default: Date.now },
 });
 

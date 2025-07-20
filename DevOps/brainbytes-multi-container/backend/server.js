@@ -312,7 +312,7 @@ app.get('/api/users/me', async (req, res) => {
 
 app.post('/api/chat/send', async (req, res) => {
   try {
-    const { message, sessionId } = req.body;
+    const { message, sessionId, subject = 'General', userEmail } = req.body;
 
     if (!message || !sessionId) {
       return res
@@ -320,22 +320,26 @@ app.post('/api/chat/send', async (req, res) => {
         .json({ error: 'Message and sessionId are required' });
     }
 
-    // Save the user message
+    // Save the user message with subject
     const userMessage = new Message({
       text: message,
       isUser: true,
       sessionId,
+      subject,
+      userEmail,
     });
     await userMessage.save();
 
     // Generate AI response
     const aiResponse = await aiService.generateResponse(message);
 
-    // Save the AI message
+    // Save the AI message with subject
     const aiMessage = new Message({
       text: aiResponse.response,
       isUser: false,
       sessionId,
+      subject,
+      userEmail,
     });
     await aiMessage.save();
 
@@ -359,7 +363,14 @@ app.get('/api/chat/history/:sessionId', async (req, res) => {
     }
 
     const messages = await Message.find({ sessionId, userEmail }).sort({ createdAt: 1 });
-    res.status(200).json({ messages });
+    // Group messages by subject
+    const grouped = {};
+    messages.forEach((msg) => {
+      const subject = msg.subject && typeof msg.subject === 'string' && msg.subject.trim() !== '' ? msg.subject : 'General';
+      if (!grouped[subject]) grouped[subject] = [];
+      grouped[subject].push(msg);
+    });
+    res.status(200).json({ messagesBySubject: grouped });
   } catch (err) {
     console.error('Error in /api/chat/history/:sessionId:', err);
     res.status(500).json({ error: 'Failed to retrieve chat history' });
