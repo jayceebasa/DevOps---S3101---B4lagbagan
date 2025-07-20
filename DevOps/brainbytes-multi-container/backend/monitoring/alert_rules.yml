@@ -11,7 +11,7 @@ groups:
           description: "No metrics have been scraped from the backend for 1 minute."
 
       - alert: HighErrorRate
-        expr: increase(brainbytes_http_requests_total{status=~\"5..\"}[5m]) > 5
+        expr: increase(brainbytes_http_requests_total{status=~"5.."}[5m]) > 5
         for: 5m
         labels:
           severity: warning

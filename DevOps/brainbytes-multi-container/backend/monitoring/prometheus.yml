@@ -4,43 +4,84 @@ global:
 
 rule_files:
   - 'alert_rules.yml'
+  - 'recording_rules.yml'
 
 scrape_configs:
   - job_name: 'prometheus'
     static_configs:
       - targets: ['localhost:9090']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        regex: 'localhost:9090'
+        replacement: 'prometheus-server'
+      - target_label: environment
+        replacement: 'production'
+      - target_label: service
+        replacement: 'prometheus'
+    scrape_interval: 30s
+    scrape_timeout: 10s
+    sample_limit: 10000
+    label_limit: 30
+    target_limit: 10
 
   - job_name: 'brainbytes-backend'
     static_configs:
       - targets: ['backend:9080']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        regex: 'backend:9080'
+        replacement: 'brainbytes-backend'
+      - target_label: environment
+        replacement: 'production'
+      - target_label: service
+        replacement: 'brainbytes-backend'
+    scrape_interval: 10s
+    scrape_timeout: 5s
+    sample_limit: 20000
+    label_limit: 40
+    target_limit: 10
+    metric_relabel_configs:
+      - source_labels: [method]
+        target_label: http_method
+        action: replace
+      - source_labels: [endpoint]
+        target_label: api_endpoint
+        action: replace
 
   - job_name: 'node-exporter'
     static_configs:
       - targets: ['node-exporter:9100']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        regex: 'node-exporter:9100'
+        replacement: 'node-exporter'
+      - target_label: environment
+        replacement: 'production'
+      - target_label: service
+        replacement: 'node-exporter'
+    scrape_interval: 30s
+    scrape_timeout: 10s
+    sample_limit: 10000
+    label_limit: 30
+    target_limit: 10
 
   - job_name: 'cadvisor'
     static_configs:
       - targets: ['cadvisor:8080']
-global:
-  scrape_interval: 15s
-  evaluation_interval: 15s
-
-rule_files:
-  - 'alert_rules.yml'
-
-scrape_configs:
-  - job_name: 'prometheus'
-    static_configs:
-      - targets: ['localhost:9090']
-
-  - job_name: 'brainbytes-backend'
-    static_configs:
-      - targets: ['backend:9080']
-
-  - job_name: 'node-exporter'
-    static_configs:
-      - targets: ['node-exporter:9100']
-
-  - job_name: 'cadvisor'
-    static_configs:
-      - targets: ['cadvisor:8080']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        regex: 'cadvisor:8080'
+        replacement: 'cadvisor'
+      - target_label: environment
+        replacement: 'production'
+      - target_label: service
+        replacement: 'cadvisor'
+    scrape_interval: 30s
+    scrape_timeout: 10s
+    sample_limit: 10000
+    label_limit: 30
+    target_limit: 10

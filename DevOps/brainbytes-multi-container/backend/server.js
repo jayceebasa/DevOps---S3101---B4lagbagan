@@ -3,6 +3,8 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const aiService = require('./aiService');
+// Start metrics server for Prometheus
+const metrics = require('./monitoring/metrics');
 const Message = require('./models/Message'); // Import the Message model
 const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/brainbytes';
 
@@ -14,6 +16,7 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use(metrics.metricsMiddleware); // <-- Add this line to enable Prometheus HTTP metrics
 
 // Initialize AI model
 aiService.initializeAI();
@@ -84,11 +87,13 @@ app.put('/api/users/me', async (req, res) => {
 
     await user.save();
     res.json(user);
+
   } catch (error) {
     console.error('Error updating user profile:', error);
     res.status(500).json({ error: 'Failed to update profile' });
   }
-});
+}
+);
 
 app.post('/api/users', async (req, res) => {
   try {
@@ -141,13 +146,10 @@ app.get('/api/messages', async (req, res) => {
 
 app.post('/api/messages', async (req, res) => {
   try {
-
     const { text, subject = 'General', sessionId, userEmail } = req.body;
-
     if (!text || !sessionId || !userEmail) {
       return res.status(400).json({ error: 'Text, sessionId, and userEmail are required' });
     }
-
     // Save the user message
     const userMessage = new Message({
       text,
@@ -156,27 +158,53 @@ app.post('/api/messages', async (req, res) => {
       sessionId,
       userEmail,
     });
-    await userMessage.save();
+
+    try {
+      await userMessage.save();
+      // Increment messages per subject metric
+      if (metrics && metrics.incrementMessagesPerSubject) {
+        metrics.incrementMessagesPerSubject(subject);
+      }
+      // Update daily active users gauge
+      if (metrics && metrics.updateDailyActiveUsersGauge) {
+        await metrics.updateDailyActiveUsersGauge();
+      }
+    } catch (err) {
+      // Increment failed message saves metric
+      if (metrics && metrics.incrementFailedMessageSaves) {
+        metrics.incrementFailedMessageSaves();
+      }
+      throw err;
+    }
+
+    // Update active users gauge (count unique userEmails with recent activity)
+    if (metrics && metrics.updateActiveUsersGauge) {
+      await metrics.updateActiveUsersGauge();
+    }
+    // Update open sessions gauge (unique sessionIds in last 2 hours)
+    if (metrics && metrics.updateOpenSessionsGauge) {
+      await metrics.updateOpenSessionsGauge();
+    }
 
     // Fetch chat history for the session and user
     const chatHistory = await Message.find({ sessionId, userEmail }).sort({ createdAt: 1 });
 
     const timeoutDuration = process.env.TIMEOUT_DURATION || 15000;
-
     const timeoutPromise = new Promise((_, reject) =>
       setTimeout(() => reject(new Error('Request timeout')), timeoutDuration)
     );
-
+    const aiStart = Date.now();
     const aiResultPromise = aiService.generateResponse(text, subject, chatHistory);
-
     const aiResult = await Promise.race([aiResultPromise, timeoutPromise]).catch((error) => {
       console.error('AI response timed out or failed:', error);
       return {
         response: "I'm sorry, but I couldn't process your request in time. Please try again later.",
       };
     });
-
-
+    const aiDuration = (Date.now() - aiStart) / 1000;
+    if (metrics && metrics.observeAIResponseTime) {
+      metrics.observeAIResponseTime(aiDuration);
+    }
     const aiMessage = new Message({
       text: aiResult.response,
       isUser: false,
@@ -185,7 +213,10 @@ app.post('/api/messages', async (req, res) => {
       userEmail,
     });
     await aiMessage.save();
-
+    // Increment AI responses metric
+    if (metrics && metrics.incrementAIResponses) {
+      metrics.incrementAIResponses();
+    }
     res.status(201).json({
       userMessage,
       aiMessage,
@@ -276,57 +307,8 @@ app.get('/api/users/me', async (req, res) => {
   }
 });
 
-// Get learning stats
-app.get('/api/users/stats', async (req, res) => {
-  try {
-    const allMessages = await Message.find();
 
-    const subjectCounts = {
-      Math: 0,
-      Science: 0,
-      History: 0,
-      Language: 0,
-      Technology: 0,
-      General: 0,
-    };
 
-    allMessages.forEach((message) => {
-      if (message.isUser) {
-        const subject = message.subject || 'General';
-        if (subjectCounts.hasOwnProperty(subject)) {
-          subjectCounts[subject]++;
-        }
-      }
-    });
-
-    const subjectData = Object.keys(subjectCounts).map((subject) => ({
-      subject,
-      count: subjectCounts[subject],
-    }));
-
-    const totalQuestions = Object.values(subjectCounts).reduce(
-      (sum, count) => sum + count,
-      0
-    );
-
-    const lastMessage = await Message.findOne({ isUser: true }).sort({
-      createdAt: -1,
-    });
-    const lastActiveDate = lastMessage ? lastMessage.createdAt : null;
-
-    const streak = 5;
-
-    res.json({
-      subjectData,
-      totalQuestions,
-      lastActive: lastActiveDate,
-      streak,
-    });
-  } catch (err) {
-    console.error('Error calculating stats:', err);
-    res.status(500).json({ error: err.message });
-  }
-});
 
 app.post('/api/chat/send', async (req, res) => {
   try {

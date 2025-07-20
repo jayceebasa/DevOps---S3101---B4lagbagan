@@ -1,0 +1,19 @@
+groups:
+  - name: brainbytes-recording-rules
+    interval: 30s
+    rules:
+      # Average HTTP request duration per endpoint (over 5m)
+      - record: job:http_request_duration_seconds:avg
+        expr: avg(rate(brainbytes_http_request_duration_seconds_sum[5m]) / rate(brainbytes_http_request_duration_seconds_count[5m])) by (instance, api_endpoint)
+
+      # Rate of messages per subject (over 5m)
+      - record: job:messages_per_subject_total:rate
+        expr: sum(rate(brainbytes_messages_per_subject_total[5m])) by (subject)
+
+      # Average AI response time (over 5m)
+      - record: job:ai_response_time_seconds:avg
+        expr: avg(rate(brainbytes_ai_response_time_seconds_sum[5m]) / rate(brainbytes_ai_response_time_seconds_count[5m]))
+
+      # Rate of intermittent connectivity events (over 5m)
+      - record: job:intermittent_connectivity_events:rate
+        expr: rate(brainbytes_intermittent_connectivity_events[5m])
