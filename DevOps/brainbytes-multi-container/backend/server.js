@@ -1,4 +1,6 @@
-// User learning stats route
+// ...existing code...
+
+// Place this route after app is initialized
 app.get('/api/users/stats', async (req, res) => {
   try {
     const email = req.query.email;
