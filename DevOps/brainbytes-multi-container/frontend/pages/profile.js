@@ -37,10 +37,20 @@ export default function Profile() {
   const [editMode, setEditMode] = useState(false);
   const [updatedUser, setUpdatedUser] = useState({});
 
-  useEffect(() => {
-    setIsClient(true);
+
+useEffect(() => {
+  setIsClient(true);
+}, []);
+
+// Wait for session to be loaded before fetching user data
+useEffect(() => {
+  if (status === "authenticated" && session?.user?.email) {
     fetchUserData();
-  }, []);
+  }
+  // Optionally, handle unauthenticated state here if needed
+  // else if (status === "unauthenticated") { ... }
+  // If you want to clear user data on logout, you can do it here
+}, [status, session]);
 
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
 
