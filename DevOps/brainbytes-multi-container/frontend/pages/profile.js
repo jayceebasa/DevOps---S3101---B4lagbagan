@@ -87,13 +87,19 @@ useEffect(() => {
         General: 0,
       };
 
-      statsResponse.data.subjectData?.forEach((item) => {
-        if (subjectBreakdown.hasOwnProperty(item.subject)) {
-          subjectBreakdown[item.subject] = item.count;
-        } else {
-          subjectBreakdown.General += item.count;
-        }
-      });
+
+      // Only count messages sent by the user (not AI)
+      if (Array.isArray(statsResponse.data.subjectData)) {
+        statsResponse.data.subjectData.forEach((item) => {
+          // If backend provides sender info, filter for user's own messages
+          if (item.sender && item.sender !== googleEmail) return;
+          if (subjectBreakdown.hasOwnProperty(item.subject)) {
+            subjectBreakdown[item.subject] = item.count;
+          } else {
+            subjectBreakdown.General += item.count;
+          }
+        });
+      }
 
       setStats({
         subjectBreakdown,
@@ -360,8 +366,16 @@ useEffect(() => {
               </div>
             ) : (
               <div className="subject-stats-card">
-                <h4>Subject Distribution</h4>
+                <h4>Your Questions by Subject</h4>
+                <p className="subject-desc">Only your own messages are counted in this breakdown. AI responses are not included.</p>
                 <div className="subject-bars">
+      <style jsx>{`
+        .subject-desc {
+          font-size: 0.95rem;
+          color: #6b7280;
+          margin-bottom: 10px;
+        }
+      `}</style>
                   {Object.entries(stats.subjectBreakdown).map(([subject, count]) => (
                     <div className="subject-stat" key={subject}>
                       <div className="subject-label">
