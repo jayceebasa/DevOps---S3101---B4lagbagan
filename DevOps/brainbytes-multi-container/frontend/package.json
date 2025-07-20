@@ -10,6 +10,7 @@
     "loose-envify": "^1.4.0",
     "nanoid": "^3.3.11",
     "next": "^15.3.4",
+    "next-auth": "^4.24.11",
     "picocolors": "^1.1.1",
     "postcss": "^8.4.31",
     "react": "^18.3.1",

@@ -1,9 +1,22 @@
+// Prevent static generation for next-auth compatibility
+export async function getServerSideProps() {
+  return { props: {} };
+}
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import Link from "next/link";
 import Head from "next/head";
+import { useSession } from "next-auth/react";
 
 export default function Home() {
+  const { data: session, status } = useSession();
+  // Redirect to login if not authenticated
+  if (status !== "authenticated") {
+    if (typeof window !== "undefined") {
+      window.location.href = "/login";
+    }
+    return null;
+  }
   const [conversationsBySubject, setConversationsBySubject] = useState({
     Math: [],
     Science: [],
@@ -24,14 +37,20 @@ export default function Home() {
 
   useEffect(() => {
     setIsClient(true);
-    fetchMessages();
-  }, []);
+    if (session?.user?.email) {
+      fetchMessages();
+    }
+  }, [session]);
 
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
 
   const fetchMessages = async () => {
+    if (!session?.user?.email) return;
     try {
-     const response = await axios.get(`${API_BASE_URL}/api/messages`);
+      // Use the current subject filter or fetch all subjects
+      const response = await axios.get(`${API_BASE_URL}/api/chat/history/${session.user.email}`, {
+        params: { userEmail: session.user.email },
+      });
       const messagesBySubject = {
         Math: [],
         Science: [],
@@ -41,7 +60,7 @@ export default function Home() {
         General: [],
       };
 
-      response.data.forEach((message) => {
+      (response.data.messages || []).forEach((message) => {
         const validSubjects = ["Math", "Science", "History", "Language", "Technology", "General"];
         const messageSubject = message.subject || "";
         const subject = validSubjects.includes(messageSubject) ? messageSubject : "General";
@@ -105,7 +124,12 @@ export default function Home() {
     
     try {
       setLoading(true);
-      const response = await axios.delete(`${API_BASE_URL}/api/messages/subject/${subjectToDelete}`);
+      const response = await axios.delete(`${API_BASE_URL}/api/messages/subject/${subjectToDelete}`, {
+        data: {
+          sessionId: session.user.email,
+          userEmail: session.user.email,
+        },
+      });
       setConversationsBySubject((prev) => ({
         ...prev,
         [subjectToDelete]: [],
@@ -125,7 +149,7 @@ export default function Home() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!newMessage.trim()) return;
+    if (!newMessage.trim() || !session?.user?.email) return;
 
     try {
       setIsTyping(true);
@@ -146,11 +170,12 @@ export default function Home() {
         ...prev,
         [targetSubject]: [...prev[targetSubject], tempUserMsg],
       }));
-      
+
       const response = await axios.post(`${API_BASE_URL}/api/messages`, {
         text: userMsg,
         subject: targetSubject,
-        sessionId: 'test-session',
+        sessionId: session.user.email,
+        userEmail: session.user.email,
       });
 
       setConversationsBySubject((prev) => {
@@ -215,7 +240,7 @@ export default function Home() {
       <Head>
         <title>BrainBytes AI Tutor</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+        {/* Font is now loaded in _document.js */}
       </Head>
 
       <div className="container">

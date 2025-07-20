@@ -4,6 +4,7 @@ const messageSchema = new mongoose.Schema({
   text: { type: String, required: true },
   isUser: { type: Boolean, required: true },
   sessionId: { type: String, required: true },
+  userEmail: { type: String, required: true },
   createdAt: { type: Date, default: Date.now },
 });
 

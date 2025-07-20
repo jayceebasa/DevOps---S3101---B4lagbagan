@@ -21,6 +21,7 @@ COPY .env.frontend .env
 # Ensure next is executable (rare but safe to include)
 RUN chmod +x ./node_modules/.bin/next
 
+
 # Build the Next.js application
 RUN npm run build
 
@@ -28,4 +29,4 @@ RUN npm run build
 EXPOSE 3000
 
 # Start the application
-CMD ["npm", "start"]
+CMD ["npm", "run", "dev"]

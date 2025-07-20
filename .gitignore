@@ -21,3 +21,5 @@ backend/node_modules/
 
 # Environment variables
 .env
+DevOps/brainbytes-multi-container/frontend/.env.frontend
+DevOps/brainbytes-multi-container/frontend/.env.frontend

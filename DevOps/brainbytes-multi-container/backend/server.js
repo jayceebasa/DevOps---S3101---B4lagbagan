@@ -141,10 +141,11 @@ app.get('/api/messages', async (req, res) => {
 
 app.post('/api/messages', async (req, res) => {
   try {
-    const { text, subject = 'General', sessionId } = req.body;
 
-    if (!text || !sessionId) {
-      return res.status(400).json({ error: 'Text and sessionId are required' });
+    const { text, subject = 'General', sessionId, userEmail } = req.body;
+
+    if (!text || !sessionId || !userEmail) {
+      return res.status(400).json({ error: 'Text, sessionId, and userEmail are required' });
     }
 
     // Save the user message
@@ -153,11 +154,12 @@ app.post('/api/messages', async (req, res) => {
       isUser: true,
       subject,
       sessionId,
+      userEmail,
     });
     await userMessage.save();
 
-    // Fetch chat history for the session
-    const chatHistory = await Message.find({ sessionId }).sort({ createdAt: 1 });
+    // Fetch chat history for the session and user
+    const chatHistory = await Message.find({ sessionId, userEmail }).sort({ createdAt: 1 });
 
     const timeoutDuration = process.env.TIMEOUT_DURATION || 15000;
 
@@ -174,11 +176,13 @@ app.post('/api/messages', async (req, res) => {
       };
     });
 
+
     const aiMessage = new Message({
       text: aiResult.response,
       isUser: false,
       subject,
       sessionId,
+      userEmail,
     });
     await aiMessage.save();
 
@@ -366,12 +370,13 @@ app.post('/api/chat/send', async (req, res) => {
 app.get('/api/chat/history/:sessionId', async (req, res) => {
   try {
     const { sessionId } = req.params;
+    const { userEmail } = req.query;
 
-    if (!sessionId) {
-      return res.status(400).json({ error: 'Session ID is required' });
+    if (!sessionId || !userEmail) {
+      return res.status(400).json({ error: 'Session ID and userEmail are required' });
     }
 
-    const messages = await Message.find({ sessionId }).sort({ createdAt: 1 });
+    const messages = await Message.find({ sessionId, userEmail }).sort({ createdAt: 1 });
     res.status(200).json({ messages });
   } catch (err) {
     console.error('Error in /api/chat/history/:sessionId:', err);
