@@ -216,9 +216,16 @@ export default function Profile() {
           <nav>
             <Link href="/">Home</Link>
             {/* Dashboard button removed */}
-            <button className="logout-button" onClick={() => signOut({ callbackUrl: "/login" })}>
+            <a
+              href="#"
+              className="logout-link"
+              onClick={e => {
+                e.preventDefault();
+                signOut({ callbackUrl: "/login" });
+              }}
+            >
               Logout
-            </button>
+            </a>
           </nav>
         </header>
 
@@ -311,20 +318,18 @@ export default function Profile() {
                     <>
                       <h3>{user.name}</h3>
       <style jsx>{`
-        .logout-button {
-          padding: 8px 16px;
-          background-color: #f3f4f6;
-          color: #1f2937;
-          border: none;
-          border-radius: 8px;
-          font-size: 0.875rem;
+        .logout-link {
+          color: #4b5563;
+          text-decoration: none;
           font-weight: 500;
-          cursor: pointer;
-          margin-left: 12px;
-          transition: background-color 0.2s;
+          transition: color 0.2s;
+          padding: 6px 10px;
+          border-radius: 6px;
+          margin-left: 0;
         }
-        .logout-button:hover {
-          background-color: #e5e7eb;
+        .logout-link:hover {
+          color: #1a56db;
+          background-color: rgba(26, 86, 219, 0.05);
         }
       `}</style>
                       <p className="email">{user.email}</p>
