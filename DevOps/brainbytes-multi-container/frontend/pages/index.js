@@ -51,26 +51,16 @@ export default function Home() {
       const response = await axios.get(`${API_BASE_URL}/api/chat/history/${session.user.email}`, {
         params: { userEmail: session.user.email },
       });
-      const messagesBySubject = {
-        Math: [],
-        Science: [],
-        History: [],
-        Language: [],
-        Technology: [],
-        General: [],
-      };
-
+      // Dynamically group messages by their actual subject field
+      const messagesBySubject = {};
       (response.data.messages || []).forEach((message) => {
-        const validSubjects = ["Math", "Science", "History", "Language", "Technology", "General"];
-        const messageSubject = message.subject || "";
-        const subject = validSubjects.includes(messageSubject) ? messageSubject : "General";
+        const subject = message.subject && typeof message.subject === 'string' && message.subject.trim() !== '' ? message.subject : 'General';
+        if (!messagesBySubject[subject]) messagesBySubject[subject] = [];
         messagesBySubject[subject].push(message);
       });
-
       Object.keys(messagesBySubject).forEach((subject) => {
         messagesBySubject[subject].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
       });
-
       setConversationsBySubject(messagesBySubject);
       setLoading(false);
     } catch (error) {
