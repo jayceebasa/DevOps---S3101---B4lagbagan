@@ -15,7 +15,6 @@ export default function Profile() {
     joinDate: "",
   });
   const [stats, setStats] = useState({
-    totalQuestions: 0,
     subjectBreakdown: {
       Math: 0,
       Science: 0,
@@ -24,8 +23,6 @@ export default function Profile() {
       Technology: 0,
       General: 0,
     },
-    streak: 0,
-    lastActive: "",
   });
   const [settings, setSettings] = useState({
     preferredSubjects: [],
@@ -99,12 +96,7 @@ useEffect(() => {
       });
 
       setStats({
-        totalQuestions: statsResponse.data.totalQuestions || 0,
         subjectBreakdown,
-        streak: statsResponse.data.streak || 0,
-        lastActive: statsResponse.data.lastActive 
-          ? new Date(statsResponse.data.lastActive).toLocaleDateString() 
-          : "Never",
       });
 
       setSettings({
@@ -361,59 +353,37 @@ useEffect(() => {
           </div>
 
           <div className="stats-section">
-            <h2>Learning Stats</h2>
+            <h2>Subject Breakdown</h2>
             {loading ? (
               <div className="loading">
                 <div className="spinner"></div>
               </div>
-            ) : stats.totalQuestions === 0 ? (
-              <div className="empty-stats">
-                <p>No learning activity recorded yet.</p>
-                <Link href="/" className="start-learning-btn">
-                  Start Learning Now
-                </Link>
-              </div>
             ) : (
-              <div className="stats-grid">
-                <div className="stat-card">
-                  <div className="stat-value">{stats.totalQuestions}</div>
-                  <div className="stat-label">Total Questions</div>
-                </div>
-                <div className="stat-card">
-                  <div className="stat-value">{stats.streak}</div>
-                  <div className="stat-label">Day Streak</div>
-                </div>
-                <div className="stat-card">
-                  <div className="stat-value">{stats.lastActive}</div>
-                  <div className="stat-label">Last Active</div>
-                </div>
-
-                <div className="subject-stats-card">
-                  <h4>Subject Distribution</h4>
-                  <div className="subject-bars">
-                    {Object.entries(stats.subjectBreakdown).map(([subject, count]) => (
-                      <div className="subject-stat" key={subject}>
-                        <div className="subject-label">
-                          <span>{subject}</span>
-                          <span>{count}</span>
-                        </div>
-                        <div className="subject-progress-bg">
-                          <div
-                            className="subject-progress-bar"
-                            style={{
-                              width: `${(count / stats.totalQuestions) * 100}%`,
-                              backgroundColor:
-                                subject === "Math" ? "#1a56db" :
-                                subject === "Science" ? "#0e9f6e" :
-                                subject === "History" ? "#e3a008" :
-                                subject === "Language" ? "#9061f9" :
-                                subject === "Technology" ? "#1c64f2" : "#6b7280",
-                            }}
-                          />
-                        </div>
+              <div className="subject-stats-card">
+                <h4>Subject Distribution</h4>
+                <div className="subject-bars">
+                  {Object.entries(stats.subjectBreakdown).map(([subject, count]) => (
+                    <div className="subject-stat" key={subject}>
+                      <div className="subject-label">
+                        <span>{subject}</span>
+                        <span>{count}</span>
                       </div>
-                    ))}
-                  </div>
+                      <div className="subject-progress-bg">
+                        <div
+                          className="subject-progress-bar"
+                          style={{
+                            width: `${count > 0 ? 100 : 0}%`,
+                            backgroundColor:
+                              subject === "Math" ? "#1a56db" :
+                              subject === "Science" ? "#0e9f6e" :
+                              subject === "History" ? "#e3a008" :
+                              subject === "Language" ? "#9061f9" :
+                              subject === "Technology" ? "#1c64f2" : "#6b7280",
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}

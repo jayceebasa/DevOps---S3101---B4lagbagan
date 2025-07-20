@@ -1,3 +1,50 @@
+// User learning stats route
+app.get('/api/users/stats', async (req, res) => {
+  try {
+    const email = req.query.email;
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+
+    // Get all messages for this user
+    const messages = await Message.find({ userEmail: email });
+
+    // Subject breakdown
+    const subjectData = [];
+    const subjectCounts = {};
+    let lastActive = null;
+    messages.forEach(msg => {
+      const subject = msg.subject || 'General';
+      subjectCounts[subject] = (subjectCounts[subject] || 0) + 1;
+      if (!lastActive || msg.createdAt > lastActive) lastActive = msg.createdAt;
+    });
+    for (const [subject, count] of Object.entries(subjectCounts)) {
+      subjectData.push({ subject, count });
+    }
+
+    // Calculate streak (number of consecutive days with at least one message)
+    const days = new Set(messages.map(msg => new Date(msg.createdAt).toDateString()));
+    let streak = 0;
+    if (days.size > 0) {
+      // Check for consecutive days up to today
+      let current = new Date();
+      while (days.has(current.toDateString())) {
+        streak++;
+        current.setDate(current.getDate() - 1);
+      }
+    }
+
+    res.json({
+      totalQuestions: messages.length,
+      subjectData,
+      streak,
+      lastActive
+    });
+  } catch (err) {
+    console.error('Error in /api/users/stats:', err);
+    res.status(500).json({ error: 'Failed to get user stats' });
+  }
+});
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
