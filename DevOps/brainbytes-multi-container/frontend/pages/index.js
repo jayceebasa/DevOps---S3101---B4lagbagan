@@ -247,7 +247,7 @@ export default function Home() {
         <header>
           <h1>BrainBytes AI Tutor</h1>
           <nav>
-            <Link href="/dashboard">Dashboard</Link>
+            {/* Dashboard button removed */}
             <Link href="/profile">Profile</Link>
           </nav>
         </header>

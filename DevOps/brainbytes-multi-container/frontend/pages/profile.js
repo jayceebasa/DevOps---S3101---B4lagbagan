@@ -1,9 +1,12 @@
+
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import Link from "next/link";
 import Head from "next/head";
+import { useSession, signOut } from "next-auth/react";
 
 export default function Profile() {
+  const { data: session, status } = useSession();
   const [isClient, setIsClient] = useState(false);
   const [user, setUser] = useState({
     name: "",
@@ -44,16 +47,27 @@ export default function Profile() {
   const fetchUserData = async () => {
     try {
       setLoading(true);
-      const [userResponse, statsResponse] = await Promise.all([
-       axios.get(`${API_BASE_URL}/api/users/me`),
-      axios.get(`${API_BASE_URL}/api/users/stats`),
-      ]);
+      let googleName = session?.user?.name || "";
+      let googleEmail = session?.user?.email || "";
+      let googleAvatar = session?.user?.image || null;
+      let joinDate = new Date().toISOString();
+
+      let userResponse = { data: {} };
+      let statsResponse = { data: {} };
+      try {
+        [userResponse, statsResponse] = await Promise.all([
+          axios.get(`${API_BASE_URL}/api/users/me`),
+          axios.get(`${API_BASE_URL}/api/users/stats`),
+        ]);
+      } catch (e) {
+        // fallback to Google session only
+      }
 
       setUser({
-        name: userResponse.data.name || "John Doe",
-        email: userResponse.data.email || "john.doe@example.com",
-        avatar: userResponse.data.avatar || null,
-        joinDate: userResponse.data.joinDate || new Date().toISOString(),
+        name: googleName || userResponse.data.name || "John Doe",
+        email: googleEmail || userResponse.data.email || "john.doe@example.com",
+        avatar: googleAvatar || userResponse.data.avatar || null,
+        joinDate: userResponse.data.joinDate || joinDate,
       });
 
       const subjectBreakdown = {
@@ -187,6 +201,7 @@ export default function Profile() {
     );
   }
 
+
   return (
     <>
       <Head>
@@ -200,7 +215,10 @@ export default function Profile() {
           <h1>BrainBytes AI Tutor</h1>
           <nav>
             <Link href="/">Home</Link>
-            <Link href="/dashboard">Dashboard</Link>
+            {/* Dashboard button removed */}
+            <button className="logout-button" onClick={() => signOut({ callbackUrl: "/login" })}>
+              Logout
+            </button>
           </nav>
         </header>
 
@@ -292,6 +310,23 @@ export default function Profile() {
                   ) : (
                     <>
                       <h3>{user.name}</h3>
+      <style jsx>{`
+        .logout-button {
+          padding: 8px 16px;
+          background-color: #f3f4f6;
+          color: #1f2937;
+          border: none;
+          border-radius: 8px;
+          font-size: 0.875rem;
+          font-weight: 500;
+          cursor: pointer;
+          margin-left: 12px;
+          transition: background-color 0.2s;
+        }
+        .logout-button:hover {
+          background-color: #e5e7eb;
+        }
+      `}</style>
                       <p className="email">{user.email}</p>
                       <p className="join-date">
                         Member since {new Date(user.joinDate).toLocaleDateString()}
