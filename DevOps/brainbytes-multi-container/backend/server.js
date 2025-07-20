@@ -1,3 +1,20 @@
+const express = require('express');
+const mongoose = require('mongoose');
+const cors = require('cors');
+const dotenv = require('dotenv');
+const aiService = require('./aiService');
+// Start metrics server for Prometheus
+const metrics = require('./monitoring/metrics');
+const Message = require('./models/Message'); // Import the Message model
+
+// Middleware
+app.use(cors());
+app.use(express.json());
+app.use(metrics.metricsMiddleware); // <-- Add this line to enable Prometheus HTTP metrics
+
+// Initialize AI model
+aiService.initializeAI();
+
 // ...existing code...
 
 // Place this route after app is initialized
