@@ -107,11 +107,26 @@ async function updateDailyActiveUsersGauge() {
   dailyActiveUsersGauge.set(uniqueEmails.length);
 }
 
+
 const metricsApp = express();
+metricsApp.use(express.json());
+
 metricsApp.get('/metrics', async (req, res) => {
   res.set('Content-Type', register.contentType);
   res.end(await register.metrics());
 });
+
+// Endpoint to increment intermittent connectivity events
+metricsApp.post('/simulate/intermittent', (req, res) => {
+  // You can optionally use userEmail from req.body if you want to track per-user
+  try {
+    intermittentConnectivityGauge.inc();
+    res.status(200).json({ message: 'Intermittent connectivity event recorded.' });
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to increment intermittent connectivity events.' });
+  }
+});
+
 metricsApp.listen(9080, () => {
   console.log('Metrics server listening on port 9080');
 });

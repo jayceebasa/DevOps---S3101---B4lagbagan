@@ -111,6 +111,16 @@ async function simulateIntermittentUser(userEmail) {
       // Simulate offline: no requests for a random short period
       const offlineTime = Math.random() * 5000 + 2000; // 2-7 seconds offline
       console.log(`[${new Date().toISOString()}] ${userEmail} is offline for ${Math.round(offlineTime)}ms`);
+      // Notify backend to increment intermittent connectivity events
+      try {
+        await fetch('http://localhost:3000/simulate/intermittent', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userEmail })
+        });
+      } catch (e) {
+        console.error(`[${new Date().toISOString()}] Failed to notify backend for intermittent event:`, e.message);
+      }
       await new Promise(r => setTimeout(r, offlineTime));
     }
     // Random delay between actions
