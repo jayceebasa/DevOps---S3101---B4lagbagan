@@ -91,9 +91,28 @@ services:
       - app-network
     restart: unless-stopped
 
+  grafana:
+    image: grafana/grafana:9.5.2
+    container_name: grafana
+    ports:
+      - "3001:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=brainbytes # Change this in production!
+      - GF_USERS_ALLOW_SIGN_UP=false
+    networks:
+      - app-network
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
 volumes:
   mongo-data:
   prometheus_data:
+
+  grafana_data:
 
 networks:
   app-network:

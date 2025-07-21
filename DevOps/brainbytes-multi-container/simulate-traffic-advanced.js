@@ -100,4 +100,36 @@ async function simulateTraffic() {
   }
 }
 
-simulateTraffic();
+// Simulate intermittent connectivity for a user
+async function simulateIntermittentUser(userEmail) {
+  while (true) {
+    // 80% chance to be online, 20% chance to be offline
+    const online = Math.random() > 0.2;
+    if (online) {
+      await makeRequest();
+    } else {
+      // Simulate offline: no requests for a random short period
+      const offlineTime = Math.random() * 5000 + 2000; // 2-7 seconds offline
+      console.log(`[${new Date().toISOString()}] ${userEmail} is offline for ${Math.round(offlineTime)}ms`);
+      await new Promise(r => setTimeout(r, offlineTime));
+    }
+    // Random delay between actions
+    const hour = new Date().getHours();
+    const delay = getLoadDelay(hour);
+    await new Promise(r => setTimeout(r, delay));
+  }
+}
+
+// Simulate 100 concurrent users, each with intermittent connectivity
+function startConcurrentUsers(count = 100) {
+  for (let i = 0; i < count; i++) {
+    const userEmail = `simuser${i}@example.com`;
+    simulateIntermittentUser(userEmail);
+  }
+}
+
+// Uncomment the following line to run the original single-user traffic simulation
+// simulateTraffic();
+
+// Start 100 concurrent users with intermittent connectivity
+startConcurrentUsers(100);
