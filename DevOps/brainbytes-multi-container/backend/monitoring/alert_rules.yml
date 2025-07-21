@@ -45,3 +45,67 @@ groups:
         annotations:
           summary: "cAdvisor is down"
           description: "No metrics have been scraped from cAdvisor for 1 minute."
+
+      # Application/Business Custom Alerts
+      - alert: HighAIResponseTime
+        expr: rate(brainbytes_ai_response_time_seconds_sum[5m]) / rate(brainbytes_ai_response_time_seconds_count[5m]) > 5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High AI response time"
+          description: "Average AI response time is over 5 seconds for 5 minutes."
+
+      - alert: HighMobileResponseTime
+        expr: rate(brainbytes_mobile_response_time_seconds_sum[5m]) / rate(brainbytes_mobile_response_time_seconds_count[5m]) > 5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High mobile response time"
+          description: "Average mobile response time is over 5 seconds for 5 minutes."
+
+      - alert: HighDataUsageSent
+        expr: sum(increase(brainbytes_data_usage_bytes_total{direction="sent"}[1h])) > 1e9
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High data usage (sent)"
+          description: "More than 1GB sent in the last hour. Possible abuse or heavy downloads."
+
+      - alert: HighDataUsageReceived
+        expr: sum(increase(brainbytes_data_usage_bytes_total{direction="received"}[1h])) > 1e9
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High data usage (received)"
+          description: "More than 1GB received in the last hour. Possible abuse or heavy uploads."
+
+      - alert: FrequentIntermittentConnectivityEvents
+        expr: increase(brainbytes_intermittent_connectivity_events[10m]) > 10
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Frequent intermittent connectivity events"
+          description: "More than 10 intermittent connectivity events detected in 10 minutes."
+
+      - alert: LowDailyActiveUsers
+        expr: brainbytes_daily_active_users < 5
+        for: 1h
+        labels:
+          severity: info
+        annotations:
+          summary: "Low daily active users"
+          description: "Less than 5 daily active users in the last 24 hours."
+
+      - alert: NoMessagesForSubject
+        expr: sum(rate(brainbytes_messages_per_subject_total[30m])) by (subject) == 0
+        for: 30m
+        labels:
+          severity: info
+        annotations:
+          summary: "No messages for a subject"
+          description: "No messages have been sent for a subject in the last 30 minutes."
