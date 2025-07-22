@@ -22,6 +22,10 @@ describe(
       20000 // Set timeout for the beforeAll hook to 20 seconds
     );
 
+    afterAll(async () => {
+      await mongoose.connection.close();
+    });
+
     test(
       'POST /api/chat/send returns correct response',
       async () => {
