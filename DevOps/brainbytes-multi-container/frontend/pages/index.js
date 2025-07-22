@@ -256,16 +256,14 @@ export default function Home() {
   return (
     <>
       <Head>
-        <title>BrainBytes AI Tutor</title>
+        <title>BrainBytes AI</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        {/* Font is now loaded in _document.js */}
       </Head>
 
       <div className="container">
         <header>
           <h1>BrainBytes AI Tutor</h1>
           <nav>
-            {/* Dashboard button removed */}
             <Link href="/profile">Profile</Link>
           </nav>
         </header>
