@@ -64,6 +64,13 @@ jobs:
             /tmp/frontend-image.tar
             /tmp/backend-image.tar
 
+      # Step 6.5: Create backend .env file from secrets
+      - name: Create backend .env file
+        working-directory: DevOps/brainbytes-multi-container/backend
+        run: |
+          echo "HUGGINGFACE_TOKEN=${{ secrets.HUGGINGFACE_TOKEN }}" > .env
+          echo "MONGODB_URI=${{ secrets.MONGODB_URI }}" >> .env
+
       # Step 7: Install Docker Compose (if needed)
       - name: Install Docker Compose
         run: |
