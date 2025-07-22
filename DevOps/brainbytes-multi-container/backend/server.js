@@ -278,7 +278,7 @@ app.post('/api/messages', async (req, res) => {
 app.delete('/api/messages/subject/:subject', async (req, res) => {
   try {
     const { subject } = req.params;
-
+    const { onlyUser, userEmail } = req.body || {};
     const validSubjects = [
       'Math',
       'Science',
@@ -287,21 +287,49 @@ app.delete('/api/messages/subject/:subject', async (req, res) => {
       'Technology',
       'General',
     ];
-    const result =
-      subject === 'General'
-        ? await Message.deleteMany({
-            $or: [
-              { subject: 'General' },
-              { subject: { $exists: false } },
-              { subject: null },
-              { subject: '' },
-              { subject: { $nin: validSubjects } },
-            ],
-          })
-        : await Message.deleteMany({
-            subject: new RegExp(`^${subject}$`, 'i'),
-          });
-
+    let filter;
+    if (onlyUser && userEmail) {
+      // Only delete this user's messages for the subject
+      if (subject === 'General') {
+        filter = {
+          $and: [
+            {
+              $or: [
+                { subject: 'General' },
+                { subject: { $exists: false } },
+                { subject: null },
+                { subject: '' },
+                { subject: { $nin: validSubjects } },
+              ],
+            },
+            { userEmail },
+          ],
+        };
+      } else {
+        filter = {
+          subject: new RegExp(`^${subject}$`, 'i'),
+          userEmail,
+        };
+      }
+    } else {
+      // Delete all messages for the subject (legacy behavior)
+      if (subject === 'General') {
+        filter = {
+          $or: [
+            { subject: 'General' },
+            { subject: { $exists: false } },
+            { subject: null },
+            { subject: '' },
+            { subject: { $nin: validSubjects } },
+          ],
+        };
+      } else {
+        filter = {
+          subject: new RegExp(`^${subject}$`, 'i'),
+        };
+      }
+    }
+    const result = await Message.deleteMany(filter);
     res.json({
       message: `Deleted ${result.deletedCount} messages from subject: ${subject}`,
       deletedCount: result.deletedCount,

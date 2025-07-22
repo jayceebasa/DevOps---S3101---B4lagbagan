@@ -98,9 +98,12 @@ export default function Home() {
   };
 
   const getUserMessageCountsBySubject = () => {
+    if (!session?.user?.email) return {};
     const userCounts = {};
     Object.keys(conversationsBySubject).forEach((subject) => {
-      userCounts[subject] = conversationsBySubject[subject].filter((msg) => msg.isUser).length;
+      userCounts[subject] = conversationsBySubject[subject].filter(
+        (msg) => msg.isUser && msg.userEmail === session.user.email
+      ).length;
     });
     return userCounts;
   };
@@ -112,24 +115,48 @@ export default function Home() {
 
   const confirmDelete = async () => {
     if (!subjectToDelete) return;
-    
     try {
       setLoading(true);
+      // Only delete this user's messages in the selected subject
       const response = await axios.delete(`${API_BASE_URL}/api/messages/subject/${subjectToDelete}`, {
         data: {
           sessionId: session.user.email,
           userEmail: session.user.email,
+          onlyUser: true, // Tell backend to only delete user's messages
         },
       });
-      setConversationsBySubject((prev) => ({
-        ...prev,
-        [subjectToDelete]: [],
-      }));
-      setNotification(`Cleared ${response.data.deletedCount} messages from ${subjectToDelete}`);
+      setConversationsBySubject((prev) => {
+        const messages = prev[subjectToDelete];
+        // Find indices of user messages to delete
+        const userMsgIndices = messages
+          .map((msg, idx) => (msg.isUser && msg.userEmail === session.user.email ? idx : -1))
+          .filter(idx => idx !== -1);
+
+        // Build a set of indices to remove: user messages and their immediate following AI message (if any)
+        const indicesToRemove = new Set();
+        userMsgIndices.forEach(idx => {
+          indicesToRemove.add(idx);
+          // If next message exists and is AI, remove it too
+          if (
+            idx + 1 < messages.length &&
+            !messages[idx + 1].isUser &&
+            messages[idx + 1].subject === subjectToDelete
+          ) {
+            indicesToRemove.add(idx + 1);
+          }
+        });
+
+        const filtered = messages.filter((_, idx) => !indicesToRemove.has(idx));
+        return {
+          ...prev,
+          [subjectToDelete]: filtered,
+        };
+      });
+      setNotification(`Cleared ${response.data.deletedCount || 0} of your messages from ${subjectToDelete}`);
       setTimeout(() => setNotification(""), 3000);
     } catch (error) {
       console.error("Error clearing messages:", error);
-      setNotification(`Error: Could not clear ${subjectToDelete} messages`);
+      setNotification(`Error: Could not clear your ${subjectToDelete} messages`);
       setTimeout(() => setNotification(""), 3000);
     } finally {
       setIsDeleteModalOpen(false);
@@ -258,14 +285,14 @@ export default function Home() {
                   <span>{subject}</span>
                   <span className="count-badge">{userCount}</span>
                 </span>
-                {conversationsBySubject[subject].length > 0 && (
+                {getUserMessageCountsBySubject()[subject] > 0 && (
                   <span
                     className="clear-icon"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleClearSubjectMessages(subject);
                     }}
-                    title={`Clear all ${subject} messages`}>
+                    title={`Clear your ${subject} messages`}>
                     🗑️
                   </span>
                 )}
