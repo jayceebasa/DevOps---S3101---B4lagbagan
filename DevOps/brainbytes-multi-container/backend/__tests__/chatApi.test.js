@@ -59,8 +59,10 @@ describe(
           .query({ userEmail: 'testuser@example.com' });
 
         expect(response.status).toBe(200);
-        expect(response.body).toHaveProperty('messages');
-        expect(Array.isArray(response.body.messages)).toBe(true);
+        expect(response.body).toHaveProperty('messagesBySubject');
+        expect(typeof response.body.messagesBySubject).toBe('object');
+        // Check that at least the General subject exists and is an array
+        expect(Array.isArray(response.body.messagesBySubject.General)).toBe(true);
       },
       20000 // Set timeout to 20 seconds
     );
