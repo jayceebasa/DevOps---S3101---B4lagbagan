@@ -127,9 +127,11 @@ metricsApp.post('/simulate/intermittent', (req, res) => {
   }
 });
 
-metricsApp.listen(9080, () => {
-  console.log('Metrics server listening on port 9080');
-});
+if (process.env.NODE_ENV !== 'test') {
+  metricsApp.listen(9080, () => {
+    console.log('Metrics server listening on port 9080');
+  });
+}
 
 function estimateSize(str) {
   return Buffer.byteLength(str || '', 'utf8');

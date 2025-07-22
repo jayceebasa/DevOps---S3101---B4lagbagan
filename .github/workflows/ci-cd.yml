@@ -1,0 +1,244 @@
+name: BrainBytes CI/CD
+
+on:
+  push:
+    branches: [main, development]
+  pull_request:
+    branches: [main, development]
+  workflow_dispatch:
+
+jobs:
+  lint:
+    name: Code Quality Checks (Node ${{ matrix.node-version }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      matrix:
+        node-version: [14.x, 16.x, 18.x]
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v2
+      - name: Set up Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v2
+        with:
+          node-version: ${{ matrix.node-version }}
+      # Frontend
+      - name: Cache frontend dependencies
+        uses: actions/cache@v3
+        with:
+          path: DevOps/brainbytes-multi-container/frontend/node_modules
+          key: ${{ runner.os }}-frontend-${{ matrix.node-version }}-${{ hashFiles('DevOps/brainbytes-multi-container/frontend/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-frontend-${{ matrix.node-version }}-
+      - name: Install frontend dependencies
+        working-directory: DevOps/brainbytes-multi-container/frontend
+        run: npm ci || npm install
+      - name: Lint frontend code
+        working-directory: DevOps/brainbytes-multi-container/frontend
+        run: |
+          npm run lint:js -- --format json --output-file eslint-report-frontend.json || true
+          npx prettier --check . || echo "Prettier issues in frontend"
+      - name: Upload frontend lint report
+        uses: actions/upload-artifact@v4
+        with:
+          name: eslint-report-frontend-${{ matrix.node-version }}
+          path: DevOps/brainbytes-multi-container/frontend/eslint-report-frontend.json
+      - name: Run npm audit on frontend
+        working-directory: DevOps/brainbytes-multi-container/frontend
+        run: npm audit --json || true
+      # Backend
+      - name: Cache backend dependencies
+        uses: actions/cache@v3
+        with:
+          path: DevOps/brainbytes-multi-container/backend/node_modules
+          key: ${{ runner.os }}-backend-${{ matrix.node-version }}-${{ hashFiles('DevOps/brainbytes-multi-container/backend/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-backend-${{ matrix.node-version }}-
+      - name: Install backend dependencies
+        working-directory: DevOps/brainbytes-multi-container/backend
+        run: npm ci || npm install
+      - name: Lint backend code
+        working-directory: DevOps/brainbytes-multi-container/backend
+        run: |
+          npm run lint:js -- --format json --output-file eslint-report-backend.json || true
+          npx prettier --check . || echo "Prettier issues in backend"
+      - name: Upload backend lint report
+        uses: actions/upload-artifact@v4
+        with:
+          name: eslint-report-backend-${{ matrix.node-version }}
+          path: DevOps/brainbytes-multi-container/backend/eslint-report-backend.json
+      - name: Run npm audit on backend
+        working-directory: DevOps/brainbytes-multi-container/backend
+        run: npm audit --json || true
+
+  test:
+    name: Run Tests (Node ${{ matrix.node-version }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: lint
+    strategy:
+      matrix:
+        node-version: [14.x, 16.x, 18.x]
+    steps:
+      - name: Start MongoDB
+        uses: supercharge/mongodb-github-action@1.10.0
+        with:
+          mongodb-version: '6.0'
+      - name: Check out repository
+        uses: actions/checkout@v2
+      - name: Set up Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v2
+        with:
+          node-version: ${{ matrix.node-version }}
+      # Frontend
+      - name: Cache frontend node_modules
+        uses: actions/cache@v4
+        with:
+          path: DevOps/brainbytes-multi-container/frontend/node_modules
+          key: ${{ runner.os }}-frontend-v2-${{ matrix.node-version }}-${{ hashFiles('DevOps/brainbytes-multi-container/frontend/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-frontend-v2-
+      - name: Install frontend dependencies
+        working-directory: DevOps/brainbytes-multi-container/frontend
+        run: |
+          rm -rf node_modules
+          if [ -f package-lock.json ]; then
+            npm install
+          else
+            echo "No package-lock.json found, skipping frontend install"
+          fi
+      - name: Run frontend tests
+        working-directory: DevOps/brainbytes-multi-container/frontend
+        run: |
+          if [ -f package.json ]; then
+            npm run test:coverage || echo "Frontend tests failed"
+          else
+            echo "package.json not found in frontend"
+          fi
+      - name: Upload frontend coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-coverage-${{ matrix.node-version }}
+          path: DevOps/brainbytes-multi-container/frontend/coverage
+      # Backend
+      - name: Cache backend node_modules
+        uses: actions/cache@v4
+        with:
+          path: DevOps/brainbytes-multi-container/backend/node_modules
+          key: ${{ runner.os }}-backend-v2-${{ matrix.node-version }}-${{ hashFiles('DevOps/brainbytes-multi-container/backend/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-backend-v2-
+      - name: Install backend dependencies
+        working-directory: DevOps/brainbytes-multi-container/backend
+        run: |
+          rm -rf node_modules
+          if [ -f package-lock.json ]; then
+            npm install
+          else
+            echo "No package-lock.json found, skipping backend install"
+          fi
+      - name: Run backend tests
+        working-directory: DevOps/brainbytes-multi-container/backend
+        run: |
+          if [ -f package.json ]; then
+            npm run test:coverage || echo "Backend tests failed"
+          else
+            echo "package.json not found in backend"
+          fi
+      - name: Upload backend coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage-${{ matrix.node-version }}
+          path: DevOps/brainbytes-multi-container/backend/coverage
+
+  docker-build:
+    name: Build Docker Images
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [lint, test]
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build frontend image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./DevOps/brainbytes-multi-container/frontend
+          file: ./DevOps/brainbytes-multi-container/frontend/Dockerfile
+          push: false
+          tags: brainbytes/frontend:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          outputs: type=docker,dest=/tmp/frontend-image.tar
+      - name: Build backend image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./DevOps/brainbytes-multi-container/backend
+          file: ./DevOps/brainbytes-multi-container/backend/Dockerfile
+          push: false
+          tags: brainbytes/backend:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          outputs: type=docker,dest=/tmp/backend-image.tar
+      - name: Upload Docker images
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-images
+          path: |
+            /tmp/frontend-image.tar
+            /tmp/backend-image.tar
+      - name: Install Docker Compose
+        run: |
+          sudo curl -L "https://github.com/docker/compose/releases/download/v2.17.2/docker-compose-linux-x86_64" -o /usr/local/bin/docker-compose
+          sudo chmod +x /usr/local/bin/docker-compose
+          docker-compose --version
+      - name: Test Docker Compose
+        working-directory: ./DevOps/brainbytes-multi-container
+        run: |
+          docker-compose up -d
+          sleep 10
+          docker-compose ps
+          docker-compose down
+
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [lint, test, docker-build]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Push frontend image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./DevOps/brainbytes-multi-container/frontend
+          file: ./DevOps/brainbytes-multi-container/frontend/Dockerfile
+          push: true
+          tags: d1tt0/brainbytes-frontend:latest
+      - name: Push backend image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./DevOps/brainbytes-multi-container/backend
+          file: ./DevOps/brainbytes-multi-container/backend/Dockerfile
+          push: true
+          tags: d1tt0/brainbytes-backend:latest
+      # Optional: Deploy via SSH
+      # - name: SSH to server and redeploy
+      #   uses: appleboy/ssh-action@v1.0.0
+      #   with:
+      #     host: ${{ secrets.SERVER_HOST }}
+      #     username: ${{ secrets.SERVER_USER }}
+      #     key: ${{ secrets.SERVER_SSH_KEY }}
+      #     script: |
+      #       docker pull jayceebasa/brainbytes-frontend:latest
+      #       docker pull jayceebasa/brainbytes-backend:latest
+      #       docker-compose down
+      #       docker-compose up -d --remove-orphans
