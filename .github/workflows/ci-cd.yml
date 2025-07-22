@@ -38,11 +38,6 @@ jobs:
         run: |
           npm run lint:js -- --format json --output-file eslint-report-frontend.json || true
           npx prettier --check . || echo "Prettier issues in frontend"
-      - name: Upload frontend lint report
-        uses: actions/upload-artifact@v4
-        with:
-          name: eslint-report-frontend-${{ matrix.node-version }}
-          path: DevOps/brainbytes-multi-container/frontend/eslint-report-frontend.json
       - name: Run npm audit on frontend
         working-directory: DevOps/brainbytes-multi-container/frontend
         run: npm audit --json || true
@@ -62,11 +57,6 @@ jobs:
         run: |
           npm run lint:js -- --format json --output-file eslint-report-backend.json || true
           npx prettier --check . || echo "Prettier issues in backend"
-      - name: Upload backend lint report
-        uses: actions/upload-artifact@v4
-        with:
-          name: eslint-report-backend-${{ matrix.node-version }}
-          path: DevOps/brainbytes-multi-container/backend/eslint-report-backend.json
       - name: Run npm audit on backend
         working-directory: DevOps/brainbytes-multi-container/backend
         run: npm audit --json || true
@@ -115,11 +105,6 @@ jobs:
           else
             echo "package.json not found in frontend"
           fi
-      - name: Upload frontend coverage
-        uses: actions/upload-artifact@v4
-        with:
-          name: frontend-coverage-${{ matrix.node-version }}
-          path: DevOps/brainbytes-multi-container/frontend/coverage
       # Backend
       - name: Cache backend node_modules
         uses: actions/cache@v4
@@ -145,11 +130,6 @@ jobs:
           else
             echo "package.json not found in backend"
           fi
-      - name: Upload backend coverage
-        uses: actions/upload-artifact@v4
-        with:
-          name: backend-coverage-${{ matrix.node-version }}
-          path: DevOps/brainbytes-multi-container/backend/coverage
 
   docker-build:
     name: Build Docker Images
@@ -181,13 +161,6 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           outputs: type=docker,dest=/tmp/backend-image.tar
-      - name: Upload Docker images
-        uses: actions/upload-artifact@v4
-        with:
-          name: docker-images
-          path: |
-            /tmp/frontend-image.tar
-            /tmp/backend-image.tar
       # Create backend .env file from secrets
       - name: Create backend .env file
         working-directory: DevOps/brainbytes-multi-container/backend
@@ -236,16 +209,5 @@ jobs:
           file: ./DevOps/brainbytes-multi-container/backend/Dockerfile
           push: true
           tags: d1tt0/brainbytes-backend:latest
-      # Optional: Deploy via SSH
-      # - name: SSH to server and redeploy
-      #   uses: appleboy/ssh-action@v1.0.0
-      #   with:
-      #     host: ${{ secrets.SERVER_HOST }}
-      #     username: ${{ secrets.SERVER_USER }}
-      #     key: ${{ secrets.SERVER_SSH_KEY }}
-      #     script: |
-      #       docker pull jayceebasa/brainbytes-frontend:latest
-      #       docker pull jayceebasa/brainbytes-backend:latest
-      #       docker-compose down
-      #       docker-compose up -d --remove-orphans
+      #test
   #test 
