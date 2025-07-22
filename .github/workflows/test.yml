@@ -67,12 +67,12 @@ jobs:
             echo "package.json not found in frontend"
           fi
 
-      # Step 6: Upload frontend coverage
-      - name: Upload frontend coverage
-        uses: actions/upload-artifact@v4
-        with:
-          name: frontend-coverage-${{ matrix.node-version }}
-          path: DevOps/brainbytes-multi-container/frontend/coverage
+      # Step 6: Upload frontend coverage (temporarily disabled to debug hanging)
+      # - name: Upload frontend coverage
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: frontend-coverage-${{ matrix.node-version }}
+      #     path: DevOps/brainbytes-multi-container/frontend/coverage
 
       ####################################
       # BACKEND
@@ -108,9 +108,9 @@ jobs:
             echo "package.json not found in backend"
           fi
 
-      # Step 10: Upload backend coverage
-      - name: Upload backend coverage
-        uses: actions/upload-artifact@v4
-        with:
-          name: backend-coverage-${{ matrix.node-version }}
-          path: DevOps/brainbytes-multi-container/backend/coverage
+      # Step 10: Upload backend coverage (temporarily disabled to debug hanging)
+      # - name: Upload backend coverage
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: backend-coverage-${{ matrix.node-version }}
+      #     path: DevOps/brainbytes-multi-container/backend/coverage
