@@ -30,6 +30,7 @@ describe(
           .send({
             message: 'Hello AI',
             sessionId: 'test-session',
+            userEmail: 'testuser@example.com',
           });
 
         expect(response.status).toBe(200);
@@ -44,6 +45,15 @@ describe(
     test(
       'GET /api/chat/history/:sessionId returns messages',
       async () => {
+        // Ensure a message exists for this sessionId and userEmail
+        await request(app)
+          .post('/api/chat/send')
+          .send({
+            message: 'History test',
+            sessionId: 'test-session',
+            userEmail: 'testuser@example.com',
+          });
+
         const response = await request(app).get('/api/chat/history/test-session');
 
         expect(response.status).toBe(200);
