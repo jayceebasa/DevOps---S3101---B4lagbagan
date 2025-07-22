@@ -17,6 +17,12 @@ jobs:
         node-version: [14.x, 16.x, 18.x]
 
     steps:
+      # Start MongoDB service for backend tests
+      - name: Start MongoDB
+        uses: supercharge/mongodb-github-action@1.10.0
+        with:
+          mongodb-version: '6.0'
+
       # Step 1: Checkout
       - name: Check out repository
         uses: actions/checkout@v2
