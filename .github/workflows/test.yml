@@ -11,11 +11,12 @@ jobs:
     name: Run Tests (Node ${{ matrix.node-version }})
     runs-on: ubuntu-latest
     timeout-minutes: 15
-
+    env:
+      HUGGINGFACE_TOKEN: ${{ secrets.HUGGINGFACE_TOKEN }}
+      MONGODB_URI: ${{ secrets.MONGODB_URI }}
     strategy:
       matrix:
         node-version: [14.x, 16.x, 18.x]
-
     steps:
       # Start MongoDB service for backend tests
       - name: Start MongoDB
