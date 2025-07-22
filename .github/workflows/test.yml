@@ -110,6 +110,7 @@ jobs:
 
       # Step 10: Upload backend coverage
       - name: Upload backend coverage
+        if: success() && hashFiles('DevOps/brainbytes-multi-container/backend/coverage/lcov.info') != ''
         uses: actions/upload-artifact@v4
         with:
           name: backend-coverage-${{ matrix.node-version }}
