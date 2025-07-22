@@ -54,7 +54,9 @@ describe(
             userEmail: 'testuser@example.com',
           });
 
-        const response = await request(app).get('/api/chat/history/test-session');
+        const response = await request(app)
+          .get('/api/chat/history/test-session')
+          .query({ userEmail: 'testuser@example.com' });
 
         expect(response.status).toBe(200);
         expect(response.body).toHaveProperty('messages');
